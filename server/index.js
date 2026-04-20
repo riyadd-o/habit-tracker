@@ -284,7 +284,12 @@ app.post("/habits", authenticateToken, async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error adding habit:", error);
+    console.error("❌ Error adding habit:", {
+      message: error.message,
+      stack: error.stack,
+      userId: req.user.id,
+      body: req.body
+    });
     res.status(500).json({ error: "Failed to add habit" });
   }
 });

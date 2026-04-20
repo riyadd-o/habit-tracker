@@ -64,6 +64,7 @@ export const changePassword = async (req, res) => {
     // Check current password
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
+      console.warn(`⚠️ Password change failed: Incorrect current password for user ${userId}`);
       return res.status(400).json({ error: "Current password is incorrect" });
     }
 
