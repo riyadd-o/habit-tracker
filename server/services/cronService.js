@@ -38,21 +38,31 @@ export const startCronJobs = () => {
       const users = usersRes.rows;
 
       const activeUsers = users.filter(user => {
-        const userTime = user.reminder_time ? user.reminder_time.substring(0, 5) : '08:00';
+        const timeStr = user.reminder_time || '08:00';
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        
+        const scheduledTime = new Date();
+        scheduledTime.setHours(hours, minutes, 0, 0);
         
         let alreadySentToday = false;
         if (user.last_notification_sent) {
-          const lastSentStr = new Date(user.last_notification_sent).toISOString().split('T')[0];
-          if (lastSentStr === todayStr) {
+          const lastSentDate = new Date(user.last_notification_sent).toLocaleDateString();
+          const currentDate = new Date().toLocaleDateString();
+          if (lastSentDate === currentDate) {
             alreadySentToday = true;
           }
         }
         
-        return userTime === currentHourMinutes && !alreadySentToday;
+        // Return true if: Current time is past scheduled time AND not yet sent today
+        return now >= scheduledTime && !alreadySentToday;
       });
 
       if (activeUsers.length === 0) {
-        return; // No users to notify at this exact minute
+        // Pulse log every 15 mins to show cron is alive
+        if (now.getMinutes() % 15 === 0) {
+          console.log(`[CRON] Pulse: Checking at ${currentHourMinutes}. Found 0 due users.`);
+        }
+        return;
       }
       
       console.log(`[CRON] Daily Reminder: Triggered at ${currentHourMinutes} for ${activeUsers.length} user(s).`);
