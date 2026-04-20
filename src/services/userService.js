@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:5000/user';
+const API_URL = `${import.meta.env.VITE_API_URL || 'https://habit-tracker-qcn7.onrender.com'}/user`;
 
 const getHeaders = () => ({
   'Content-Type': 'application/json',

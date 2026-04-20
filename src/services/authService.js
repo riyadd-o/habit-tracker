@@ -1,4 +1,4 @@
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/auth`
+const API_URL = `${import.meta.env.VITE_API_URL || 'https://habit-tracker-qcn7.onrender.com'}/auth`
 
 export const registerUser = async (userData) => {
   const response = await fetch(`${API_URL}/register`, {

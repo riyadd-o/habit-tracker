@@ -42,7 +42,7 @@ const ResetPassword = () => {
 
     setIsLoading(true)
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://habit-tracker-qcn7.onrender.com'
       const response = await fetch(`${baseUrl}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

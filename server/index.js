@@ -27,7 +27,22 @@ const __dirname = path.dirname(__filename);
 // Serve static files from public folder
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use(cors({ origin: "*" }));
+const allowedOrigins = [
+  'https://habit-tracker-roan-tau.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve static files from uploads folder
@@ -83,16 +98,25 @@ pool.on('error', (err, client) => {
 
 
 
-// Test route
-app.get("/", (req, res) => {
-    res.send("API is running...");
+// Health check route
+app.get("/health", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.json({ 
+      status: "ok", 
+      database: "connected", 
+      time: result.rows[0].now 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: "error", 
+      database: "disconnected", 
+      error: error.message 
+    });
+  }
 });
 
-// Start server ✅
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server is production-ready and running on port ${PORT}`);
-});
+// End of middleware and routes setup
 
 
 
@@ -102,10 +126,47 @@ const connectWithRetry = async () => {
     await pool.connect();
     console.log("✨ Connected to Neon DB successfully!");
     
-    // Ensure user settings columns exist
+    // Create tables if they don't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(255),
+        avatar_url TEXT,
+        reset_token VARCHAR(255),
+        reset_token_expiry TIMESTAMP,
+        email_notifications BOOLEAN DEFAULT true,
+        daily_reminder BOOLEAN DEFAULT true,
+        reminder_time VARCHAR(5) DEFAULT '08:00',
+        last_notification_sent DATE
+      );
+
+      CREATE TABLE IF NOT EXISTS habits (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        frequency VARCHAR(50) DEFAULT 'daily',
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        streak INTEGER DEFAULT 0,
+        longest_streak INTEGER DEFAULT 0,
+        last_completed_date DATE
+      );
+
+      CREATE TABLE IF NOT EXISTS habit_logs (
+        id SERIAL PRIMARY KEY,
+        habit_id INTEGER REFERENCES habits(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        UNIQUE(habit_id, date)
+      );
+    `);
+
+    // Ensure user settings columns exist (for migration if tables already exist)
     await pool.query(`
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+      ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP,
       ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT true,
       ADD COLUMN IF NOT EXISTS daily_reminder BOOLEAN DEFAULT true,
       ADD COLUMN IF NOT EXISTS reminder_time VARCHAR(5) DEFAULT '08:00',
@@ -119,12 +180,14 @@ const connectWithRetry = async () => {
       ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS last_completed_date DATE
     `);
+    
     console.log("🛠️ Database schema checked/updated.");
     
     // Start background cron jobs after DB connects
     startCronJobs();
   } catch (err) {
-    console.error("❌ DB connection failed. Retrying in 5 seconds...", err.message);
+    console.error("❌ DB connection or schema setup failed:", err.message);
+    console.error(err.stack);
     setTimeout(connectWithRetry, 5000);
   }
 };
@@ -392,5 +455,31 @@ app.put("/user/avatar", authenticateToken, upload.single("avatar"), async (req, 
     res.status(500).json({ error: "Failed to update avatar" });
   }
 });
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("❌ Global Error Handler:", {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
+  res.status(500).json({ error: "Something went wrong on the server" });
+});
+
+// Start server ✅
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server is production-ready and running on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  pool.end(() => {
+    console.log('Pool has ended');
+    process.exit(0);
+  });
+});
+
 
 
