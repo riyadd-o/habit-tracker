@@ -28,14 +28,16 @@ export const register = async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
 
-    // Send welcome email with a slight delay (non-blocking)
+    // Send welcome email (non-blocking)
+    console.log(`🚀 User registered: ${email}. Triggering welcome email...`);
     setTimeout(async () => {
       try {
         await sendWelcomeEmail(email, result.rows[0].name);
+        console.log(`✅ Welcome email sent successfully to: ${email}`);
       } catch (error) {
-        console.error("Error sending welcome email:", error);
+        console.error(`❌ Error sending welcome email to ${email}:`, error.message);
       }
-    }, 1000);
+    }, 2000);
   } catch (error) {
     if (error.code === '23505') { // Unique violation
       return res.status(400).json({ error: "Email already exists" });

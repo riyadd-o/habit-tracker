@@ -57,7 +57,7 @@ const getBaseTemplate = (content, footerText = "You’re receiving this because 
 `;
 
 export const sendResetEmail = async (email, token) => {
-  const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}/reset-password?token=${token}`;
 
   const content = `
     <p style="margin: 0 0 20px 0; color: #444444; font-size: 16px; line-height: 1.5;">Hi there,</p>
@@ -123,7 +123,7 @@ export const sendDailyReminder = async (email, name, pendingCount, streakData) =
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
             <td align="center">
-                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 6px;">Complete Your Habits</a>
+                <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 6px;">Complete Your Habits</a>
             </td>
         </tr>
     </table>
@@ -164,7 +164,7 @@ export const sendWeeklySummary = async (email, name, completedCount, streaks) =>
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
             <td align="center">
-                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 6px;">View Your Progress</a>
+                <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 6px;">View Your Progress</a>
             </td>
         </tr>
     </table>
@@ -216,7 +216,7 @@ export const sendWelcomeEmail = async (email, name) => {
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
               <td align="center" style="padding-top: 10px;">
-                  <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 35px; border-radius: 8px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);">Start Tracking Now</a>
+                  <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 35px; border-radius: 8px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);">Start Tracking Now</a>
               </td>
           </tr>
       </table>

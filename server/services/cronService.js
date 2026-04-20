@@ -20,6 +20,7 @@ const getLocalToday = () => {
 
 export const startCronJobs = () => {
   console.log('⏰ Initializing production cron jobs...');
+  console.log('✅ Cron job started');
 
   // Daily Reminder: Runs every minute to check user-specific times
   cron.schedule('* * * * *', async () => {
