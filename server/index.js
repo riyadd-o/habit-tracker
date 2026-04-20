@@ -116,35 +116,18 @@ app.get("/health", async (req, res) => {
   }
 });
 
-import { startCronJobs } from "./services/cronService.js";
+import { startCronJobs, notifyDueUsers } from "./services/cronService.js";
 import { sendDailyReminder } from "./services/emailService.js";
 
-app.get("/test-cron", authenticateToken, async (req, res) => {
+// Production Cron Endpoint (Triggered by external services like cron-job.org)
+app.get("/api/cron/daily-reminder", async (req, res) => {
+  console.log("外部 [EXTERNAL] Cron Request received at:", new Date().toISOString());
+  
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const userRes = await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id]);
-    const user = userRes.rows[0];
-
-    // Check habits
-    const countRes = await pool.query(
-      `SELECT count(*) FROM habits h 
-       WHERE h.user_id = $1 
-         AND h.frequency = 'daily'
-         AND NOT EXISTS (
-            SELECT 1 FROM habit_logs hl WHERE hl.habit_id = h.id AND hl.date = $2
-         )`,
-      [user.id, todayStr]
-    );
-    const pendingCount = parseInt(countRes.rows[0].count, 10);
-
-    if (pendingCount === 0) {
-      return res.json({ message: "No pending habits for today. Email skipped.", user: user.email });
-    }
-
-    await sendDailyReminder(user.email, user.name, pendingCount, { streak: 0, isAtRisk: false });
-    res.json({ message: "Test reminder email sent successfully!", user: user.email });
+    await notifyDueUsers();
+    res.json({ message: "Cron process completed" });
   } catch (err) {
-    console.error("Test cron error:", err);
+    console.error("External cron error:", err);
     res.status(500).json({ error: err.message });
   }
 });
