@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { User, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import useAuthStore from '../../hooks/useAuthStore'
 import { updateProfile, getUserSettings } from '../../services/userService'
 import AvatarPicker from '../../components/AvatarPicker'
@@ -32,23 +31,22 @@ const Profile = () => {
   }, [])
 
   const handleSaveAvatar = async (newAvatarUrl) => {
-    if (!name.trim()) return toast.error('Please enter a username first')
+    if (!name.trim()) return
     
     setIsAvatarSaving(true)
     try {
       const updatedUser = await updateProfile({ name, avatar_url: newAvatarUrl })
       setUser(updatedUser)
       setOriginalName(updatedUser.name)
-      toast.success('Avatar updated successfully!')
     } catch (err) {
-      toast.error(err.message)
+      console.error(err.message)
     } finally {
       setIsAvatarSaving(false)
     }
   }
 
   const handleUpdateName = async () => {
-    if (!name.trim()) return toast.error('Name is required')
+    if (!name.trim()) return
     if (name === originalName) return
     
     setIsNameUpdating(true)
@@ -56,9 +54,8 @@ const Profile = () => {
       const updatedUser = await updateProfile({ name, avatar_url: user.avatar_url })
       setUser(updatedUser)
       setOriginalName(updatedUser.name)
-      toast.success('Username updated successfully')
     } catch (err) {
-      toast.error(err.message)
+      console.error(err.message)
     } finally {
       setIsNameUpdating(false)
     }

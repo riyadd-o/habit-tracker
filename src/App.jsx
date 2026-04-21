@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
 import { AnimatePresence } from 'framer-motion'
 
 // Stores
@@ -56,23 +55,6 @@ function App() {
 
   return (
     <Router>
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#fff',
-            color: '#0f172a',
-            borderRadius: '16px',
-            fontSize: '14px',
-            fontWeight: '600',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-            padding: '12px 20px',
-            border: '1px solid #f1f5f9'
-          },
-        }}
-      />
-      
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />

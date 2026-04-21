@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import toast from 'react-hot-toast'
 import { loginUser, registerUser } from '../services/authService'
 
 const useAuthStore = create((set) => ({
@@ -46,7 +45,7 @@ const useAuthStore = create((set) => ({
       set({ user, token })
       return true
     } catch (error) {
-      toast.error(error.message || 'Login failed')
+      console.error('Login failed', error)
       return false
     }
   },
@@ -54,10 +53,9 @@ const useAuthStore = create((set) => ({
   signup: async (userData) => {
     try {
       await registerUser(userData)
-      toast.success('Account created! Please log in.')
       return true
     } catch (error) {
-      toast.error(error.message || 'Registration failed')
+      console.error('Registration failed', error)
       return false
     }
   },
@@ -66,7 +64,6 @@ const useAuthStore = create((set) => ({
     localStorage.removeItem('user')
     localStorage.removeItem('token')
     set({ user: null, token: null })
-    toast.success('Logged out')
   },
   
   setUser: (userData) => {

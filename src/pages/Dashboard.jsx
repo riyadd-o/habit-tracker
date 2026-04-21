@@ -2,9 +2,8 @@ import { useState, useMemo, useEffect } from 'react'
 import useAuthStore from '../hooks/useAuthStore'
 import useHabitStore from '../hooks/useHabitStore'
 import HabitCard from '../components/HabitCard'
-import { Plus, Search, TrendingUp, CheckCircle, Flame, Loader2, List, Wifi, WifiOff, RefreshCcw, AlertCircle } from 'lucide-react'
+import { Plus, Search, TrendingUp, CheckCircle, Flame, Loader2, List, WifiOff, RefreshCcw, AlertCircle, X, AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Toaster, toast } from 'react-hot-toast'
 
 const Dashboard = () => {
   const { user } = useAuthStore()
@@ -22,20 +21,16 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState(null)
-  const [showWelcomeBanner, setShowWelcomeBanner] = useState(true)
+  
+  // Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [habitToDelete, setHabitToDelete] = useState(null)
 
   // Form state
   const [form, setForm] = useState({ title: '', description: '', frequency: 'daily' })
 
   useEffect(() => {
     fetchHabits()
-    
-    // Hide welcome banner after 4 seconds
-    const timer = setTimeout(() => {
-      setShowWelcomeBanner(false)
-    }, 4000)
-    
-    return () => clearTimeout(timer)
   }, [])
 
   // --- UI Helpers ---
@@ -45,10 +40,10 @@ const Dashboard = () => {
     const completedToday = habits.filter(h => h.completed).length
     const completionRate = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
     
-    // Calculate total streaks using the store's logic for each habit
+    // Calculate total streaks
     const totalStreaks = habits.reduce((acc, h) => {
-      const { current } = useHabitStore.getState().getHabitStreak(h.id)
-      return acc + current
+      const streakInfo = useHabitStore.getState().getHabitStreak(h.id)
+      return acc + (streakInfo?.current || 0)
     }, 0)
 
     return { 
@@ -57,7 +52,7 @@ const Dashboard = () => {
       completionRate, 
       totalStreaks
     }
-  }, [habits, useHabitStore.getState])
+  }, [habits])
 
   const filteredHabits = habits.filter(h => 
     h.title?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -94,6 +89,19 @@ const Dashboard = () => {
     }
   }
 
+  const confirmDelete = (habit) => {
+    setHabitToDelete(habit)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDeleteHabit = async () => {
+    if (habitToDelete) {
+      await deleteHabit(habitToDelete.id)
+      setDeleteModalOpen(false)
+      setHabitToDelete(null)
+    }
+  }
+
   // --- Render Logic ---
 
   if (loading && habits.length === 0) return (
@@ -113,31 +121,8 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20 relative">
-      <Toaster position="top-right" />
-
       {/* Header & Stats */}
       <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pt-6 relative">
-        {/* Welcome Banner */}
-        <AnimatePresence>
-          {showWelcomeBanner && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.95 }}
-              className="absolute -top-6 right-0 z-[100] w-full max-w-sm"
-            >
-              <div className="bg-emerald-500/10 dark:bg-emerald-500/20 backdrop-blur-md border border-emerald-500/20 dark:border-emerald-500/30 p-3 rounded-2xl shadow-xl shadow-emerald-500/10 flex items-center justify-center gap-3">
-                <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white">
-                  <CheckCircle className="w-5 h-5" />
-                </div>
-                <p className="text-emerald-700 dark:text-emerald-400 font-bold">
-                  Welcome back, {user?.name || 'User'}!
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <div className="space-y-3 flex flex-col justify-center">
           <div className="flex items-center gap-3">
             <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -149,7 +134,7 @@ const Dashboard = () => {
             </div>
           </div>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">
-            Track your habits and build a better future, one day at a time.
+            Welcome back, {user?.name || 'User'}! Track your progress today.
           </p>
         </div>
         
@@ -250,7 +235,7 @@ const Dashboard = () => {
                   key={habit.id} 
                   habit={habit} 
                   toggleCompletion={() => toggleCompletion(habit.id)}
-                  onDelete={() => deleteHabit(habit.id)}
+                  onDelete={() => confirmDelete(habit)}
                   onEdit={() => handleOpenModal(habit)}
                 />
               ))
@@ -281,7 +266,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Habit Modal */}
+      {/* Habit Creation/Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -299,7 +284,15 @@ const Dashboard = () => {
               className="card w-full max-w-md relative z-10 p-6 shadow-2xl overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-primary-500" />
-              <h3 className="text-xl font-bold mb-5">{editingHabit ? 'Edit Habit' : 'Create New Habit'}</h3>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xl font-bold">{editingHabit ? 'Edit Habit' : 'Create New Habit'}</h3>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -356,9 +349,53 @@ const Dashboard = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteModalOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className="card w-full max-w-sm relative z-10 p-8 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Delete Habit</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">
+                Are you sure you want to delete <span className="text-slate-900 dark:text-white font-bold italic">'{habitToDelete?.title}'</span>? This action cannot be undone.
+              </p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setDeleteModalOpen(false)}
+                  className="btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex-1 h-12 font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDeleteHabit}
+                  className="btn bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 flex-1 h-12 font-bold transition-all"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 export default Dashboard
-

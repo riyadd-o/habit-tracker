@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Lock, Shield, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { changePassword } from '../../services/userService'
 
 const Security = () => {
@@ -21,19 +20,18 @@ const Security = () => {
     setCurrentPasswordError('')
     
     if (formData.newPassword.length < 3) {
-      return toast.error('New password must be at least 3 characters')
+      return
     }
 
     setLoading(true)
     try {
       await changePassword(formData)
-      toast.success('Password updated successfully')
       setFormData({ currentPassword: '', newPassword: '' })
     } catch (err) {
       if (err.message.includes('Current password is incorrect')) {
         setCurrentPasswordError('Invalid current Password')
       } else {
-        toast.error(err.message)
+        console.error(err.message)
       }
     } finally {
       setLoading(false)

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Mail, Clock, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { updateNotifications, getUserSettings } from '../../services/userService'
 
 const Notifications = () => {
@@ -32,7 +31,7 @@ const Notifications = () => {
         setSettings(initial)
         setOriginalSettings(initial)
       } catch (err) {
-        toast.error('Failed to load notification settings')
+        console.error('Failed to load notification settings', err)
       } finally {
         setFetching(false)
       }
@@ -55,9 +54,8 @@ const Notifications = () => {
     try {
       await updateNotifications(settings)
       setOriginalSettings({ ...settings })
-      toast.success('Notification settings saved')
     } catch (err) {
-      toast.error(err.message)
+      console.error(err.message)
     } finally {
       setLoading(false)
     }

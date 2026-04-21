@@ -104,7 +104,7 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
             <Edit2 className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => onDelete(habit.id)}
+            onClick={() => onDelete()}
             className="p-2.5 text-slate-300 hover:text-red-500 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
