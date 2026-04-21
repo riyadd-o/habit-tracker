@@ -11,9 +11,21 @@ import fs from "fs";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import { authenticateToken } from "./middleware/auth.js";
-import { startCronJobs } from "./services/cronService.js";
+import { startCronJobs, notifyDueUsers } from "./services/cronService.js";
 
 dotenv.config();
+
+console.log("Server starting...");
+console.log("Environment loaded");
+
+// Safe Environment Variable Validation
+const requiredEnvVars = ["DATABASE_URL", "JWT_SECRET", "EMAIL_USER", "EMAIL_PASS", "CLIENT_URL"];
+requiredEnvVars.forEach((varName) => {
+  if (!process.env[varName]) {
+    console.error(`❌ Missing critical environment variable: ${varName}`);
+    process.exit(1);
+  }
+});
 
 const { Pool } = pkg;
 
@@ -115,9 +127,6 @@ app.get("/health", async (req, res) => {
     });
   }
 });
-
-import { startCronJobs, notifyDueUsers } from "./services/cronService.js";
-import { sendDailyReminder } from "./services/emailService.js";
 
 // Production Cron Endpoint (Triggered by external services like cron-job.org)
 app.get("/api/cron/daily-reminder", async (req, res) => {
