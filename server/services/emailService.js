@@ -129,6 +129,61 @@ export const sendDailyReminder = async (email, name, habits) => {
   return transporter.sendMail(mailOptions);
 };
 
+export const sendStreakWarning = async (email, name, habits) => {
+  const brandColor = "#f97316"; // Warning orange
+  const urgentColor = "#ef4444"; // Urgent red
+
+  const habitsHtml = habits.map(h => {
+    const isUrgent = h.diffDays >= 3;
+    const statusMsg = isUrgent 
+      ? "Last chance! Complete this today or your streak will reset."
+      : "You're close to losing this streak. Complete it today to keep it alive.";
+    
+    return `
+      <div style="background-color: #fffaf0; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid #ffedd5;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: #111827; font-size: 17px; margin-bottom: 6px;">${h.title}</div>
+              <div style="color: #ea580c; font-size: 15px; font-weight: 600; margin-bottom: 10px;">🔥 ${h.streak} day streak</div>
+              <div style="color: ${isUrgent ? urgentColor : '#6b7280'}; font-size: 14px; font-weight: 500; line-height: 1.4;">
+                ${statusMsg}
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+  }).join('');
+
+  const content = `
+    <h2 style="margin: 0 0 10px 0; color: ${brandColor}; font-size: 26px; font-weight: 800; text-align: center;">⚠️ Your Streak is at Risk!</h2>
+    <p style="margin: 0 0 25px 0; color: #4b5563; font-size: 16px; text-align: center;">
+        Hi <span style="color: ${brandColor}; font-weight: 700;">${name || 'there'}</span>, don't let your hard work go to waste!
+    </p>
+
+    <div style="margin-bottom: 30px;">
+        <p style="margin: 0 0 15px 0; color: #111827; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Habits nearing reset:</p>
+        ${habitsHtml}
+    </div>
+
+    <div style="text-align: center;">
+        <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 36px; border-radius: 12px; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);">Save My Streak</a>
+    </div>
+  `;
+
+  const footerText = "Consistency builds success. Don’t let your progress slip.";
+
+  const mailOptions = {
+    from: `"HabitFlow" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "⚠️ Streak Warning - HabitFlow",
+    html: getBaseTemplate(content, footerText),
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
 export const sendWelcomeEmail = async (email, name) => {
   const brandColor = "#4f46e5";
   const content = `
