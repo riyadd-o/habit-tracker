@@ -100,13 +100,13 @@ const DashboardLayout = () => {
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950" />
              </button>
-             <button className="md:hidden w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-sm shadow-md overflow-hidden">
+             <Link to="/settings" className="md:hidden w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-sm shadow-md overflow-hidden active:scale-90 transition-transform">
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
                   user?.name ? user.name[0].toUpperCase() : user?.email?.[0].toUpperCase() || '?'
                 )}
-             </button>
+             </Link>
           </div>
         </header>
 

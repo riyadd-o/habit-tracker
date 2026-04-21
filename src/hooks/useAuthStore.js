@@ -6,28 +6,34 @@ const useAuthStore = create((set) => ({
   token: null,
   initialized: false,
 
-  initAuth: () => {
+  initAuth: async () => {
     try {
-      // Look for new key first, then fallback to old key for migration
-      let storedToken = localStorage.getItem('token') || localStorage.getItem('habit_tracker_token');
-      let storedUser = localStorage.getItem('user') || localStorage.getItem('habit_tracker_user');
+      let storedToken = localStorage.getItem('token');
+      let storedUser = localStorage.getItem('user');
       
       if (storedToken) {
-        // Sync to new keys if we found old ones
-        if (!localStorage.getItem('token')) localStorage.setItem('token', storedToken);
-        if (!localStorage.getItem('user') && storedUser) localStorage.setItem('user', storedUser);
-
         set({ 
           token: storedToken,
           user: storedUser ? JSON.parse(storedUser) : null
         })
+
+        // Background refresh to sync across devices
+        try {
+          // Import service dynamically to avoid circular dependencies if any
+          const { getUserSettings } = await import('../services/userService');
+          const latestUser = await getUserSettings();
+          if (latestUser) {
+            localStorage.setItem('user', JSON.stringify(latestUser));
+            set({ user: latestUser });
+          }
+        } catch (syncErr) {
+          console.error('Background sync failed:', syncErr.message);
+        }
       }
     } catch (error) {
       console.error('Failed to init auth', error)
       localStorage.removeItem('user')
       localStorage.removeItem('token')
-      localStorage.removeItem('habit_tracker_user')
-      localStorage.removeItem('habit_tracker_token')
     } finally {
       set({ initialized: true })
     }

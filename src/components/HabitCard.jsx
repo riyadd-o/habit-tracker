@@ -70,7 +70,7 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
         <button
           onClick={() => toggleCompletion(habit.id)}
           disabled={isToggling || isCompletedToday}
-          className={`flex-1 sm:flex-initial min-w-[140px] flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
+          className={`flex-1 sm:flex-initial min-w-[120px] flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
             isCompletedToday 
             ? 'bg-green-500 text-white shadow-lg shadow-green-500/20 hover:bg-green-600' 
             : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-primary-500 hover:ring-2 hover:ring-primary-500 dark:hover:text-primary-400'
