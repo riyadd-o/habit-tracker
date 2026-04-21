@@ -61,8 +61,8 @@ const DashboardLayout = () => {
         </nav>
 
         <div className="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
-          <div className="bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-lg shadow-md overflow-hidden">
+          <Link to="/settings/profile" className="bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl p-4 flex items-center gap-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/80 transition-all group">
+            <div className="w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-lg shadow-md overflow-hidden group-hover:scale-105 transition-transform">
               {user?.avatar_url ? (
                 <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
               ) : (
@@ -70,10 +70,10 @@ const DashboardLayout = () => {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate text-slate-900 dark:text-white">{user?.name || 'User'}</p>
+              <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors">{user?.name || 'User'}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
             </div>
-          </div>
+          </Link>
           
           <div className="flex items-center justify-between px-2">
             <ThemeToggle />
@@ -100,7 +100,7 @@ const DashboardLayout = () => {
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950" />
              </button>
-             <Link to="/settings" className="md:hidden w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-sm shadow-md overflow-hidden active:scale-90 transition-transform">
+             <Link to="/settings/profile" className="md:hidden w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-sm shadow-md overflow-hidden active:scale-90 transition-transform">
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
