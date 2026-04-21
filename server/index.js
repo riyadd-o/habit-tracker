@@ -164,8 +164,8 @@ const connectWithRetry = async () => {
         reset_token_expiry TIMESTAMP,
         email_notifications BOOLEAN DEFAULT true,
         daily_reminder BOOLEAN DEFAULT true,
-        reminder_time VARCHAR(5) DEFAULT '08:00',
-        last_notification_sent DATE
+        last_notification_sent DATE,
+        last_reminder_time_sent VARCHAR(5)
       );
 
       CREATE TABLE IF NOT EXISTS habits (
@@ -196,7 +196,8 @@ const connectWithRetry = async () => {
       ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT true,
       ADD COLUMN IF NOT EXISTS daily_reminder BOOLEAN DEFAULT true,
       ADD COLUMN IF NOT EXISTS reminder_time VARCHAR(5) DEFAULT '08:00',
-      ADD COLUMN IF NOT EXISTS last_notification_sent DATE
+      ADD COLUMN IF NOT EXISTS last_notification_sent DATE,
+      ADD COLUMN IF NOT EXISTS last_reminder_time_sent VARCHAR(5)
     `);
 
     // Ensure habit streak columns exist

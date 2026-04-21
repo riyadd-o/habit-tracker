@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const getBaseTemplate = (content, footerText = "You’re receiving this because notifications are enabled") => `
+const getBaseTemplate = (content, footerText = "Stay consistent. Small steps every day build powerful habits.") => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,21 +18,21 @@ const getBaseTemplate = (content, footerText = "You’re receiving this because 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HabitFlow</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9fafb; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6; padding: 40px 10px;">
         <tr>
             <td align="center">
                 <!-- Main Card -->
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); overflow: hidden;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden;">
                     
-                    <!-- Header -->
+                    <!-- Gradient-like Header -->
                     <tr>
-                        <td align="center" style="padding: 40px 0; border-bottom: 2px solid #f3f4f6;">
-                            <img src="https://i.imgur.com/84XH28D.png" alt="HabitFlow Logo" width="280" style="display:block; margin: 0 auto; max-width: 80%; height: auto; border: 0; outline: none; text-decoration: none;" />
+                        <td align="center" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); background-color: #4f46e5; padding: 40px 0;">
+                             <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">HabitFlow</h1>
                         </td>
                     </tr>
 
-                    <!-- Content -->
+                    <!-- Content Body -->
                     <tr>
                         <td style="padding: 40px 30px;">
                             ${content}
@@ -43,9 +43,9 @@ const getBaseTemplate = (content, footerText = "You’re receiving this because 
                 <!-- Footer -->
                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
                     <tr>
-                        <td align="center" style="padding: 24px 20px; color: #9ca3af; font-size: 13px; line-height: 1.5;">
-                            <p style="margin: 0 0 8px 0;">${footerText}</p>
-                            <p style="margin: 0;">&copy; ${new Date().getFullYear()} HabitFlow. All rights reserved.</p>
+                        <td align="center" style="padding: 30px 20px; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                            <p style="margin: 0 0 8px 0; font-weight: 500; color: #4b5563;">${footerText}</p>
+                            <p style="margin: 0;">&copy; ${new Date().getFullYear()} HabitFlow. Building better futures.</p>
                         </td>
                     </tr>
                 </table>
@@ -58,186 +58,103 @@ const getBaseTemplate = (content, footerText = "You’re receiving this because 
 
 export const sendResetEmail = async (email, token) => {
   const resetUrl = `${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}/reset-password?token=${token}`;
+  const brandColor = "#4f46e5";
 
   const content = `
-    <p style="margin: 0 0 20px 0; color: #444444; font-size: 16px; line-height: 1.5;">Hi there,</p>
-    <p style="margin: 0 0 25px 0; color: #444444; font-size: 16px; line-height: 1.5;">
-        You requested to reset your password for your Habit Tracker account. Click the button below to set a new password. This link will expire in 1 hour.
+    <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">Hi there,</p>
+    <p style="margin: 0 0 30px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+        We received a request to reset your password. No worries, it happens to the best of us! Click the button below to secure your account.
     </p>
 
-    <!-- CTA Button -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
-        <tr>
-            <td align="center">
-                <a href="${resetUrl}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 6px;">Reset Password</a>
-            </td>
-        </tr>
-    </table>
+    <div style="text-align: center; margin-bottom: 30px;">
+        <a href="${resetUrl}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 32px; border-radius: 10px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">Reset My Password</a>
+    </div>
 
-    <p style="margin: 0; color: #888888; font-size: 14px; line-height: 1.5;">
-        If you didn't request this, you can safely ignore this email.
-    </p>
+    <p style="margin: 0; color: #9ca3af; font-size: 14px; text-align: center;">If you didn't request this, you can safely ignore this email.</p>
   `;
-
-  const mailOptions = {
-    from: `"Habit Tracker" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Reset Your Password - Habit Tracker",
-    html: getBaseTemplate(content),
-  };
-
-  console.log(`📧 Sending reset password email to: ${email}`);
-  return transporter.sendMail(mailOptions);
-};
-
-export const sendDailyReminder = async (email, name, pendingCount, streakData) => {
-  const brandColor = "#4f46e5"; // Unique indigo color
-  
-  let streakHtml = '';
-  if (streakData && streakData.streak > 0) {
-    streakHtml = `<p style="margin: 10px 0 0 0; color: #e85d04; font-size: 15px; font-weight: 600;">🔥 Current Streak: ${streakData.streak} days</p>`;
-  } else if (streakData && streakData.isAtRisk) {
-    streakHtml = `<p style="margin: 10px 0 0 0; color: #d97706; font-size: 15px; font-weight: 600;">⚠️ Your streak is at risk! Complete today to save it.</p>`;
-  }
-
-  const content = `
-    <!-- Header Title -->
-    <h1 style="margin: 0 0 20px 0; color: ${brandColor}; font-size: 26px; font-weight: 800; text-align: center;">Daily Reminder</h1>
-    
-    <!-- Greeting -->
-    <p style="margin: 0 0 15px 0; color: #444444; font-size: 16px; line-height: 1.5;">
-        Hi <span style="color: ${brandColor}; font-weight: 700;">${name || 'there'}</span>,
-    </p>
-    
-    <!-- Main Message -->
-    <p style="margin: 0 0 25px 0; color: #444444; font-size: 16px; line-height: 1.5;">
-        Consistency is the superpower of high achievers. Don't let your momentum slip — here is your status for today:
-    </p>
-
-    <!-- Highlight Section -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f7fb; border-radius: 10px; margin-bottom: 25px; border: 1px solid #e5e7eb;">
-        <tr>
-            <td style="padding: 20px;">
-                <p style="margin: 0; color: #111111; font-size: 16px; font-weight: 700;">📈 Incomplete Habits: ${pendingCount}</p>
-                ${streakHtml}
-            </td>
-        </tr>
-    </table>
-
-    <!-- CTA Button -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-            <td align="center">
-                <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);">Complete Today's Habits</a>
-            </td>
-        </tr>
-    </table>
-  `;
-
-  const footerText = "Every small action today builds the life you want tomorrow. Stay unstoppable!";
 
   const mailOptions = {
     from: `"HabitFlow" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "Daily Reminder - HabitFlow",
-    html: getBaseTemplate(content, footerText),
+    subject: "Reset Your Password - HabitFlow",
+    html: getBaseTemplate(content, "Security matters. You're one step away from getting back on track."),
   };
 
-  console.log(`📧 Sending daily reminder email to: ${email}`);
   return transporter.sendMail(mailOptions);
 };
 
-export const sendWeeklySummary = async (email, name, completedCount, streaks) => {
+export const sendDailyReminder = async (email, name, habits) => {
+  const brandColor = "#4f46e5";
+  const accentColor = "#7c3aed";
+
+  const habitsHtml = habits.map(h => `
+    <div style="background-color: #f9fafb; border-radius: 12px; padding: 15px 20px; margin-bottom: 12px; border: 1px solid #f3f4f6;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td>
+            <div style="font-weight: 700; color: #111827; font-size: 16px; margin-bottom: 4px;">${h.title}</div>
+            <div style="color: #ef4444; font-size: 14px; font-weight: 600;">🔥 ${h.streak || 0} day streak</div>
+          </td>
+          <td align="right">
+             <div style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid #d1d5db;"></div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `).join('');
+
   const content = `
-    <!-- Greeting -->
-    <p style="margin: 0 0 20px 0; color: #444444; font-size: 16px; line-height: 1.5;">Hi ${name || 'there'},</p>
-    
-    <!-- Main Message -->
-    <p style="margin: 0 0 25px 0; color: #444444; font-size: 16px; line-height: 1.5;">
-        Here is a quick look at your progress for the past week. Let's see how much momentum you've built!
+    <h2 style="margin: 0 0 10px 0; color: ${brandColor}; font-size: 24px; font-weight: 800; text-align: center;">Daily Reminder</h2>
+    <p style="margin: 0 0 25px 0; color: #4b5563; font-size: 16px; text-align: center;">
+        Hi <span style="color: ${accentColor}; font-weight: 700;">${name || 'there'}</span>, consistency is your superpower.
     </p>
 
-    <!-- Highlight Section -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f7fb; border-radius: 6px; margin-bottom: 25px;">
-        <tr>
-            <td style="padding: 20px;">
-                <p style="margin: 0 0 10px 0; color: #111111; font-size: 16px; font-weight: 600;">Total habits completed: ${completedCount}</p>
-                <p style="margin: 0; color: #111111; font-size: 16px; font-weight: 600;">Active streaks: ${streaks} 🔥</p>
-            </td>
-        </tr>
-    </table>
+    <div style="margin-bottom: 30px;">
+        <p style="margin: 0 0 15px 0; color: #111827; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Your Incomplete Habits:</p>
+        ${habitsHtml}
+    </div>
 
-    <!-- CTA Button -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-            <td align="center">
-                <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 6px;">View Your Progress</a>
-            </td>
-        </tr>
-    </table>
-  `;
-
-  const mailOptions = {
-    from: `"Habit Tracker" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Your Weekly Summary - Habit Tracker",
-    html: getBaseTemplate(content),
-  };
-
-  console.log(`📧 Sending weekly summary email to: ${email}`);
-  return transporter.sendMail(mailOptions);
-};
-
-export const sendWelcomeEmail = async (email, name) => {
-  const content = `
-    <!-- Greeting -->
-    <div style="text-align: left;">
-      <p style="margin: 0 0 20px 0; color: #444444; font-size: 16px; line-height: 1.5;">Hi ${name || 'there'},</p>
-      
-      <!-- Main Message -->
-      <p style="margin: 0 0 25px 0; color: #444444; font-size: 16px; line-height: 1.5;">
-          Welcome to Habit Tracker! You're one step closer to building better habits. We're excited to help you stay consistent and reach your goals.
-      </p>
-
-      <!-- Highlight Section -->
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f7fb; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #4f46e5;">
-          <tr>
-              <td style="padding: 20px;">
-                  <p style="margin: 0 0 12px 0; color: #111111; font-size: 16px; font-weight: 700;">🚀 Here's what you can do:</p>
-                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                          <td style="padding-bottom: 8px; color: #444444; font-size: 15px;">✅ <strong>Track daily habits</strong> - Stay on top of your routine</td>
-                      </tr>
-                      <tr>
-                          <td style="padding-bottom: 8px; color: #444444; font-size: 15px;">🔥 <strong>Build streaks</strong> - Watch your progress grow</td>
-                      </tr>
-                      <tr>
-                          <td style="padding-bottom: 0; color: #444444; font-size: 15px;">📅 <strong>Stay consistent</strong> - Be the best version of yourself</td>
-                      </tr>
-                  </table>
-              </td>
-          </tr>
-      </table>
-
-      <!-- CTA Button -->
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-              <td align="center" style="padding-top: 10px;">
-                  <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 35px; border-radius: 8px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);">Start Tracking Now</a>
-              </td>
-          </tr>
-      </table>
+    <div style="text-align: center;">
+        <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 36px; border-radius: 12px;">Launch Dashboard</a>
     </div>
   `;
 
   const mailOptions = {
-    from: `"Habit Tracker" <${process.env.EMAIL_USER}>`,
+    from: `"HabitFlow" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "Welcome to Habit Tracker 🚀",
-    html: getBaseTemplate(content, "You're receiving this email because you created an account"),
+    subject: "Daily Habit Reminder - HabitFlow",
+    html: getBaseTemplate(content, "Stay consistent. Small steps every day build powerful habits."),
   };
 
-  console.log(`📧 Sending welcome email to: ${email}`);
   return transporter.sendMail(mailOptions);
 };
 
+export const sendWelcomeEmail = async (email, name) => {
+  const brandColor = "#4f46e5";
+  const content = `
+    <h2 style="margin: 0 0 15px 0; color: ${brandColor}; font-size: 26px; font-weight: 800; text-align: center;">Welcome to HabitFlow!</h2>
+    <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6; text-align: center;">
+        Hi ${name || 'there'}, we're thrilled to have you here! You're now equipped to track your habits, build streaks, and transform your daily life.
+    </p>
+
+    <div style="background-color: #f5f3ff; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
+        <p style="margin: 0 0 12px 0; color: #111827; font-weight: 700;">Quick Tips to Get Started:</p>
+        <div style="margin-bottom: 8px; color: #4b5563; font-size: 15px;">• Create your first habit</div>
+        <div style="margin-bottom: 8px; color: #4b5563; font-size: 15px;">• Set a daily reminder time</div>
+        <div style="color: #4b5563; font-size: 15px;">• Check in daily to grow your streak</div>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 36px; border-radius: 12px;">Start My Journey</a>
+    </div>
+  `;
+
+  const mailOptions = {
+    from: `"HabitFlow" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Welcome to HabitFlow 🚀",
+    html: getBaseTemplate(content, "Your journey starts today. Build habits that shape your future."),
+  };
+
+  return transporter.sendMail(mailOptions);
+};
