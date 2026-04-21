@@ -130,11 +130,12 @@ app.get("/health", async (req, res) => {
 
 // Production Cron Endpoint (Triggered by external services like cron-job.org)
 app.get("/api/cron/daily-reminder", async (req, res) => {
-  console.log("外部 [EXTERNAL] Cron Request received at:", new Date().toISOString());
+  const isForced = req.query.force === "true";
+  console.log(`外部 [EXTERNAL] Cron Request received at: ${new Date().toISOString()} ${isForced ? "(FORCED)" : ""}`);
   
   try {
-    await notifyDueUsers();
-    res.json({ message: "Cron process completed" });
+    await notifyDueUsers(isForced);
+    res.json({ message: "Cron process completed", forced: isForced });
   } catch (err) {
     console.error("External cron error:", err);
     res.status(500).json({ error: err.message });

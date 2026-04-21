@@ -25,8 +25,8 @@ const getTargetDateString = () => {
   }).format(new Date());
 };
 
-export const notifyDueUsers = async () => {
-  console.log("🚀 Running daily reminder cron...");
+export const notifyDueUsers = async (force = false) => {
+  console.log(`🚀 Running daily reminder cron... ${force ? "[FORCE MODE]" : ""}`);
   const now = new Date();
   
   // Explicit Addis Ababa time check
@@ -61,7 +61,6 @@ export const notifyDueUsers = async () => {
       
       let alreadySentToday = false;
       if (user.last_notification_sent) {
-        // More robust comparison: format last_notification_sent to YYYY-MM-DD in the same timezone
         const lastSentDateStr = new Intl.DateTimeFormat('en-CA', {
           timeZone: 'Africa/Addis_Ababa',
           year: 'numeric',
@@ -74,14 +73,22 @@ export const notifyDueUsers = async () => {
         }
       }
       
-      // Check if current time is >= scheduled time
       const isPastDue = (currentHour > h) || (currentHour === h && currentMin >= m);
       
-      return isPastDue && !alreadySentToday;
+      // Force mode ONLY bypasses the "already sent today" check
+      const shouldNotify = isPastDue && (force || !alreadySentToday);
+
+      if (alreadySentToday && !force) {
+        console.log(`[CRON] Skip ${user.email}: Already notified today.`);
+      } else if (!isPastDue) {
+        console.log(`[CRON] Skip ${user.email}: Scheduled for ${timeStr} (Current: ${addisAbabaTime})`);
+      }
+      
+      return shouldNotify;
     });
 
     if (activeUsers.length === 0) {
-      console.log(`[CRON] No users due for notification at current time (${addisAbabaTime})`);
+      console.log(`[CRON] No users due for notification (Time: ${addisAbabaTime}${force ? ", Force Mode On" : ""})`);
       return;
     }
     
@@ -102,8 +109,9 @@ export const notifyDueUsers = async () => {
 
         const pendingCount = parseInt(countRes.rows[0].count, 10);
         
+        // ONLY send if there are pending habits (even in force mode, as requested)
         if (pendingCount > 0) {
-          console.log("Sending reminder to:", user.email);
+          console.log(`[CRON] ${force ? "[FORCE] " : ""}Sending reminder to:`, user.email);
           
           // Fetch the highest current streak among active daily habits to motivate the user
           const streakRes = await pool.query(
@@ -115,12 +123,16 @@ export const notifyDueUsers = async () => {
           // Send email
           await sendDailyReminder(user.email, user.name, pendingCount, { streak: maxStreak, isAtRisk: false });
 
-          // Update last sent date using explicit target date to avoid server local time issues
-          await pool.query('UPDATE users SET last_notification_sent = $1 WHERE id = $2', [todayStr, user.id]);
+          // Update last sent date (unless forced, so we can test repeatedly)
+          if (!force) {
+            await pool.query('UPDATE users SET last_notification_sent = $1 WHERE id = $2', [todayStr, user.id]);
+          }
         } else {
-          console.log(`[CRON] Skipped ${user.email} (all habits done)`);
+          console.log(`[CRON] Skipped ${user.email}: All habits completed today.`);
           // Still mark as "processed" today so we don't spam them if they complete/uncomplete
-          await pool.query('UPDATE users SET last_notification_sent = $1 WHERE id = $2', [todayStr, user.id]);
+          if (!force) {
+            await pool.query('UPDATE users SET last_notification_sent = $1 WHERE id = $2', [todayStr, user.id]);
+          }
         }
       } catch (innerErr) {
         console.error(`[CRON] Failed to process user ${user.email}:`, innerErr.message);
