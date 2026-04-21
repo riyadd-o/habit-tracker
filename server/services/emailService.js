@@ -91,29 +91,34 @@ export const sendResetEmail = async (email, token) => {
 };
 
 export const sendDailyReminder = async (email, name, pendingCount, streakData) => {
+  const brandColor = "#4f46e5"; // Unique indigo color
+  
   let streakHtml = '';
-  if (streakData) {
-    if (streakData.isAtRisk) {
-      streakHtml = `<p style="margin: 10px 0 0 0; color: #d97706; font-size: 15px; font-weight: 600;">⚠️ Your streak is at risk. Complete today to restore it</p>`;
-    } else if (streakData.streak > 0) {
-      streakHtml = `<p style="margin: 10px 0 0 0; color: #e85d04; font-size: 15px; font-weight: 600;">🔥 You're on a ${streakData.streak} day streak</p>`;
-    }
+  if (streakData && streakData.streak > 0) {
+    streakHtml = `<p style="margin: 10px 0 0 0; color: #e85d04; font-size: 15px; font-weight: 600;">🔥 Current Streak: ${streakData.streak} days</p>`;
+  } else if (streakData && streakData.isAtRisk) {
+    streakHtml = `<p style="margin: 10px 0 0 0; color: #d97706; font-size: 15px; font-weight: 600;">⚠️ Your streak is at risk! Complete today to save it.</p>`;
   }
 
   const content = `
+    <!-- Header Title -->
+    <h1 style="margin: 0 0 20px 0; color: ${brandColor}; font-size: 26px; font-weight: 800; text-align: center;">Daily Reminder</h1>
+    
     <!-- Greeting -->
-    <p style="margin: 0 0 20px 0; color: #444444; font-size: 16px; line-height: 1.5;">Hi ${name || 'there'},</p>
+    <p style="margin: 0 0 15px 0; color: #444444; font-size: 16px; line-height: 1.5;">
+        Hi <span style="color: ${brandColor}; font-weight: 700;">${name || 'there'}</span>,
+    </p>
     
     <!-- Main Message -->
     <p style="margin: 0 0 25px 0; color: #444444; font-size: 16px; line-height: 1.5;">
-        It's time to work on your goals! Consistency is the key to building lasting habits, and we are here to help you stay on track.
+        Consistency is the superpower of high achievers. Don't let your momentum slip — here is your status for today:
     </p>
 
     <!-- Highlight Section -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f7fb; border-radius: 6px; margin-bottom: 25px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f7fb; border-radius: 10px; margin-bottom: 25px; border: 1px solid #e5e7eb;">
         <tr>
             <td style="padding: 20px;">
-                <p style="margin: 0; color: #111111; font-size: 16px; font-weight: 600;">Incomplete Habits: ${pendingCount}</p>
+                <p style="margin: 0; color: #111111; font-size: 16px; font-weight: 700;">📈 Incomplete Habits: ${pendingCount}</p>
                 ${streakHtml}
             </td>
         </tr>
@@ -123,17 +128,19 @@ export const sendDailyReminder = async (email, name, pendingCount, streakData) =
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
             <td align="center">
-                <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 6px;">Complete Your Habits</a>
+                <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);">Complete Today's Habits</a>
             </td>
         </tr>
     </table>
   `;
 
+  const footerText = "Every small action today builds the life you want tomorrow. Stay unstoppable!";
+
   const mailOptions = {
-    from: `"Habit Tracker" <${process.env.EMAIL_USER}>`,
+    from: `"HabitFlow" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "Daily Habit Reminder - Habit Tracker",
-    html: getBaseTemplate(content),
+    subject: "Daily Reminder - HabitFlow",
+    html: getBaseTemplate(content, footerText),
   };
 
   console.log(`📧 Sending daily reminder email to: ${email}`);

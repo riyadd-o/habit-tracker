@@ -105,8 +105,15 @@ export const notifyDueUsers = async () => {
         if (pendingCount > 0) {
           console.log("Sending reminder to:", user.email);
           
+          // Fetch the highest current streak among active daily habits to motivate the user
+          const streakRes = await pool.query(
+            "SELECT MAX(streak) as max_streak FROM habits WHERE user_id = $1 AND frequency = 'daily'",
+            [user.id]
+          );
+          const maxStreak = parseInt(streakRes.rows[0].max_streak || 0, 10);
+          
           // Send email
-          await sendDailyReminder(user.email, user.name, pendingCount, { streak: 0, isAtRisk: false });
+          await sendDailyReminder(user.email, user.name, pendingCount, { streak: maxStreak, isAtRisk: false });
 
           // Update last sent date using explicit target date to avoid server local time issues
           await pool.query('UPDATE users SET last_notification_sent = $1 WHERE id = $2', [todayStr, user.id]);
