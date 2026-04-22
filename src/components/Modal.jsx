@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 
@@ -27,17 +28,22 @@ const Modal = ({
     }
   }, [isOpen, onClose])
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+          style={{ touchAction: 'none' }}
+        >
           {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
           />
 
           {/* Modal Container */}
@@ -74,7 +80,8 @@ const Modal = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 
