@@ -66,9 +66,12 @@ export const sendResetEmail = async (email, token) => {
         We received a request to reset your password. No worries, it happens to the best of us! Click the button below to secure your account.
     </p>
 
-    <div style="text-align: center; margin-bottom: 30px;">
+    <div style="text-align: center; margin-bottom: 20px;">
         <a href="${resetUrl}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 32px; border-radius: 10px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">Reset My Password</a>
     </div>
+    <p style="text-align: center; color: #ef4444; font-size: 13px; font-weight: 700; margin-bottom: 30px;">
+        ⚠️ This link will expire in 30 minutes.
+    </p>
 
     <p style="margin: 0; color: #9ca3af; font-size: 14px; text-align: center;">If you didn't request this, you can safely ignore this email.</p>
   `;
