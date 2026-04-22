@@ -63,5 +63,3 @@ const TermsModal = ({ isOpen, onClose }) => {
 }
 
 export default TermsModal
-
-export default TermsModal
