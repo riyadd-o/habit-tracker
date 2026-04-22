@@ -6,6 +6,7 @@
   "scripts": {
     "server": "npm run dev --prefix server",
     "client": "vite",
+    "build": "vite build",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "dependencies": {
