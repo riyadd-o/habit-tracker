@@ -19,40 +19,28 @@ const Dashboard = () => {
   } = useHabitStore()
   
   const [searchTerm, setSearchTerm] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingHabit, setEditingHabit] = useState(null)
+  const [editingHabitId, setEditingHabitId] = useState(null)
   
-  // Delete Modal State
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  // Delete Sheet State
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [habitToDelete, setHabitToDelete] = useState(null)
 
-  // Form state
+  // Create Sheet State
+  const [createSheetOpen, setCreateSheetOpen] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', frequency: 'daily' })
 
   useEffect(() => {
     fetchHabits()
   }, [])
 
-  // Lock body scroll when modals are open
+  // Lock body scroll when sheets are open
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') {
-        setIsModalOpen(false)
-        setDeleteModalOpen(false)
-      }
-    }
-    
-    if (isModalOpen || deleteModalOpen) {
+    if (deleteSheetOpen || createSheetOpen) {
       document.body.style.overflow = 'hidden'
-      window.addEventListener('keydown', handleEsc)
     } else {
       document.body.style.overflow = 'unset'
     }
-    return () => {
-      document.body.style.overflow = 'unset'
-      window.removeEventListener('keydown', handleEsc)
-    }
-  }, [isModalOpen, deleteModalOpen])
+  }, [deleteSheetOpen, createSheetOpen])
 
   // --- UI Helpers ---
 
@@ -61,64 +49,36 @@ const Dashboard = () => {
     const completedToday = habits.filter(h => h.completed).length
     const completionRate = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0
     
-    // Calculate total streaks
     const totalStreaks = habits.reduce((acc, h) => {
       const streakInfo = useHabitStore.getState().getHabitStreak(h.id)
       return acc + (streakInfo?.current || 0)
     }, 0)
 
-    return { 
-      completedToday, 
-      totalHabits, 
-      completionRate, 
-      totalStreaks
-    }
+    return { completedToday, totalHabits, completionRate, totalStreaks }
   }, [habits])
 
   const filteredHabits = habits.filter(h => 
     h.title?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleOpenModal = (habit = null) => {
-    if (habit) {
-      setEditingHabit(habit)
-      setForm({ title: habit.title, description: habit.description || '', frequency: habit.frequency || 'daily' })
-    } else {
-      setEditingHabit(null)
-      setForm({ title: '', description: '', frequency: 'daily' })
-    }
-    setIsModalOpen(true)
-  }
-
-  const handleSubmit = async (e) => {
+  const handleCreateSubmit = async (e) => {
     e.preventDefault()
-    let success = false
-    const habitData = { 
-      title: form.title, 
-      description: form.description, 
-      frequency: form.frequency 
-    }
-
-    if (editingHabit) {
-      success = await updateHabit(editingHabit.id, habitData)
-    } else {
-      success = await addHabit(habitData)
-    }
-    
+    const success = await addHabit(form)
     if (success) {
-      setIsModalOpen(false)
+      setCreateSheetOpen(false)
+      setForm({ title: '', description: '', frequency: 'daily' })
     }
   }
 
   const confirmDelete = (habit) => {
     setHabitToDelete(habit)
-    setDeleteModalOpen(true)
+    setDeleteSheetOpen(true)
   }
 
   const handleDeleteHabit = async () => {
     if (habitToDelete) {
       await deleteHabit(habitToDelete.id)
-      setDeleteModalOpen(false)
+      setDeleteSheetOpen(false)
       setHabitToDelete(null)
     }
   }
@@ -127,84 +87,43 @@ const Dashboard = () => {
 
   if (loading && habits.length === 0) return (
     <div className="h-full flex flex-col items-center justify-center space-y-4 py-32 animate-fade-in">
-      <div className="relative">
-        <Loader2 className="w-16 h-16 text-primary-500 animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 bg-primary-500/10 rounded-full animate-pulse" />
-        </div>
-      </div>
-      <div className="text-center space-y-1">
+      <Loader2 className="w-16 h-16 text-primary-500 animate-spin" />
+      <div className="text-center">
         <p className="text-slate-900 dark:text-white font-bold text-xl">Loading your dashboard</p>
-        <p className="text-slate-500 font-medium italic">Preparing your success story...</p>
       </div>
     </div>
   )
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20 relative">
+    <div className="max-w-6xl mx-auto space-y-8 pb-32">
       {/* Header & Stats */}
       <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pt-6 relative">
         <div className="space-y-3 flex flex-col justify-center">
-          <div className="flex items-center gap-3">
-            <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Dashboard <span className="text-slate-400 dark:text-slate-600 font-light">Overview</span>
-            </h2>
-            {error && (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500`}>
-                <span className={`w-2 h-2 rounded-full bg-red-500 animate-pulse`} />
-                Server Offline
-              </div>
-            )}
-          </div>
+          <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Dashboard <span className="text-slate-400 dark:text-slate-600 font-light">Overview</span>
+          </h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">
-            Welcome back, {user?.name || 'User'}! Track your progress today.
+            Welcome back, {user?.name || 'User'}!
           </p>
         </div>
-        
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full lg:w-auto">
           {[
             { label: 'Completed', value: stats.completedToday, icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
             { label: 'Total Habits', value: stats.totalHabits, icon: List, color: 'text-blue-500', bg: 'bg-blue-500/10' },
             { label: 'Active Streaks', value: stats.totalStreaks, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10' },
             { label: 'Today Rate', value: `${stats.completionRate}%`, icon: TrendingUp, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-          ].map((stat, i) => {
-            const Icon = stat.icon
-            return (
-              <div key={i} className="card p-4 flex flex-col items-center text-center group transition-all hover:shadow-lg hover:-translate-y-1">
-                <div className={`${stat.bg} ${stat.color} p-2.5 rounded-xl mb-2 group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="text-xl font-bold">{stat.value}</div>
-                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-sans">{stat.label}</div>
-              </div>
-            )
-          })}
+          ].map((stat, i) => (
+            <div key={i} className="card p-4 flex flex-col items-center text-center">
+              <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
+              <div className="text-xl font-bold">{stat.value}</div>
+              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-sans">{stat.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Main Content Area */}
       <div className="space-y-6">
-        {/* Error Notice */}
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-2xl"
-          >
-            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-              <AlertCircle className="w-5 h-5 shrink-0" />
-              <p className="text-sm font-medium">Connectivity issues. Changes might not save until reconnected.</p>
-            </div>
-            <button 
-              onClick={() => fetchHabits()}
-              className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors"
-            >
-              <RefreshCcw className="w-3 h-3" />
-              Reconnect Now
-            </button>
-          </motion.div>
-        )}
-
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="relative w-full sm:w-96">
@@ -214,11 +133,11 @@ const Dashboard = () => {
               placeholder="Search habits..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input pl-11 h-12 bg-white dark:bg-slate-900 shadow-sm border-slate-100 dark:border-slate-800 focus:ring-2 focus:ring-primary-500/20"
+              className="input pl-11 h-12 bg-white dark:bg-slate-900 shadow-sm border-slate-100 dark:border-slate-800"
             />
           </div>
           <button 
-            onClick={() => handleOpenModal()}
+            onClick={() => setCreateSheetOpen(true)}
             className="btn btn-primary h-12 px-6 w-full sm:w-auto flex items-center gap-2 text-lg font-bold shadow-lg shadow-primary-500/20"
           >
             <Plus className="w-5 h-5" />
@@ -226,153 +145,67 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* Habits List / Error / Empty States */}
+        {/* Habits List */}
         <div className="grid grid-cols-1 gap-4">
           <AnimatePresence mode="popLayout" initial={false}>
-            {error && habits.length === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="card p-16 flex flex-col items-center justify-center text-center border-2 border-dashed border-red-200 dark:border-red-900/30 bg-red-50/30 dark:bg-transparent"
-              >
-                <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-6">
-                  <WifiOff className="w-10 h-10 text-red-500" />
-                </div>
-                <h3 className="text-2xl font-bold mb-2">Connection Lost</h3>
-                <p className="text-slate-500 max-w-sm mb-8">
-                  We can't reach the server right now. Make sure your internet is working and the backend is online.
-                </p>
-                <div className="flex flex-col items-center gap-4">
-                  <button 
-                    onClick={() => fetchHabits()}
-                    className="btn btn-primary px-8 h-12 flex items-center gap-2 shadow-xl shadow-primary-500/30"
-                  >
-                    <RefreshCcw className="w-5 h-5" />
-                    Retry Connection
-                  </button>
-                </div>
-              </motion.div>
-            ) : filteredHabits.length > 0 ? (
-              filteredHabits.sort((a,b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1)).map(habit => (
-                <HabitCard 
-                  key={habit.id} 
-                  habit={habit} 
-                  toggleCompletion={() => toggleCompletion(habit.id)}
-                  onDelete={() => confirmDelete(habit)}
-                  onEdit={() => handleOpenModal(habit)}
-                />
-              ))
-            ) : (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="card p-20 flex flex-col items-center justify-center text-center"
-              >
-                <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                  <Plus className="w-10 h-10 text-slate-300" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">No habits found</h3>
-                <p className="text-slate-500 max-w-sm mb-8">
-                  {searchTerm ? "No habits match your search." : "You haven't created any habits yet. Start your journey today!"}
-                </p>
-                {!searchTerm && (
-                  <button 
-                    onClick={() => handleOpenModal()}
-                    className="btn btn-primary"
-                  >
-                    Create Your First Habit
-                  </button>
-                )}
-              </motion.div>
-            )}
+            {filteredHabits.sort((a,b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1)).map(habit => (
+              <HabitCard 
+                key={habit.id} 
+                habit={habit} 
+                isEditing={editingHabitId === habit.id}
+                toggleCompletion={() => toggleCompletion(habit.id)}
+                onDelete={() => confirmDelete(habit)}
+                onEdit={(id) => setEditingHabitId(id)}
+                onCancelEdit={() => setEditingHabitId(null)}
+                onSaveEdit={updateHabit}
+              />
+            ))}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Habit Creation/Edit Modal */}
+      {/* DELETE BOTTOM SHEET */}
       <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        {deleteSheetOpen && (
+          <div className="fixed inset-0 z-[70] flex items-end justify-center">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={() => setDeleteSheetOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="card w-full max-w-md relative z-10 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden p-0"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 shadow-2xl z-10"
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-primary-500 z-20" />
+              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-8" />
               
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                <h3 className="text-xl font-bold">{editingHabit ? 'Edit Habit' : 'Create New Habit'}</h3>
+              <div className="text-center space-y-4 mb-8">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                <h3 className="text-2xl font-black">Delete Habit</h3>
+                <p className="text-slate-500">
+                  Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">'{habitToDelete?.title}'</span>? <br/> This action cannot be undone.
+                </p>
+              </div>
+              
+              <div className="flex flex-col gap-3">
                 <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  onClick={handleDeleteHabit}
+                  className="btn bg-red-500 text-white hover:bg-red-600 h-14 rounded-2xl font-bold text-lg transition-all active:scale-95"
                 >
-                  <X className="w-5 h-5 text-slate-400" />
+                  Delete Habit
                 </button>
-              </div>
-              
-              {/* Scrollable Content */}
-              <div className="p-6 overflow-y-auto custom-scrollbar">
-                <form id="habit-form" onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="label text-xs">Title</label>
-                    <input 
-                      required 
-                      type="text" 
-                      placeholder="e.g. Morning Meditation"
-                      value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
-                      className="input h-10 text-base focus:ring-2 focus:ring-primary-500/20" 
-                    />
-                  </div>
-
-                  <div>
-                    <label className="label text-xs">Frequency</label>
-                    <select 
-                      value={form.frequency}
-                      onChange={(e) => setForm({ ...form, frequency: e.target.value })}
-                      className="input h-10 text-sm"
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="label text-xs">Description (Optional)</label>
-                    <textarea 
-                      placeholder="What will this habit help you achieve?"
-                      value={form.description}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })}
-                      className="input min-h-[100px] py-2 text-sm" 
-                    />
-                  </div>
-                </form>
-              </div>
-
-              {/* Action Footer (Sticky-like) */}
-              <div className="p-6 border-t border-slate-100 dark:border-slate-800 shrink-0 flex gap-3 bg-white dark:bg-slate-900">
                 <button 
-                  type="button" 
-                  onClick={() => setIsModalOpen(false)}
-                  className="btn btn-secondary flex-1 h-10 text-base font-bold"
+                  onClick={() => setDeleteSheetOpen(false)}
+                  className="btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 h-14 rounded-2xl font-bold text-lg transition-all"
                 >
                   Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  form="habit-form"
-                  className="btn btn-primary flex-1 h-10 text-base font-bold shadow-lg shadow-primary-500/20"
-                >
-                  {editingHabit ? 'Save' : 'Create'}
                 </button>
               </div>
             </motion.div>
@@ -380,48 +213,69 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Modal */}
+      {/* CREATE BOTTOM SHEET */}
       <AnimatePresence>
-        {deleteModalOpen && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+        {createSheetOpen && (
+          <div className="fixed inset-0 z-[70] flex items-end justify-center">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setDeleteModalOpen(false)}
-              className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+              onClick={() => setCreateSheetOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 10 }}
-              className="card w-full max-w-sm relative z-10 p-8 shadow-2xl text-center flex flex-col max-h-[90vh] overflow-hidden"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 shadow-2xl z-10"
             >
-              <div className="overflow-y-auto">
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
-                  <AlertTriangle className="w-8 h-8" />
+              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-8" />
+              <h3 className="text-2xl font-black mb-6 text-center">New Habit</h3>
+              
+              <form onSubmit={handleCreateSubmit} className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block mb-2 px-1">Habit Title</label>
+                  <input 
+                    required 
+                    placeholder="e.g. Read for 30 minutes"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    className="input h-14 text-lg bg-slate-50 dark:bg-slate-800/50" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-2 px-1">Frequency</label>
+                    <select 
+                      value={form.frequency}
+                      onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                      className="input h-14 bg-slate-50 dark:bg-slate-800/50"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                    </select>
+                  </div>
                 </div>
                 
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Delete Habit</h3>
-                <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">
-                  Are you sure you want to delete <span className="text-slate-900 dark:text-white font-bold italic">'{habitToDelete?.title}'</span>? This action cannot be undone.
-                </p>
-              </div>
-              
-              <div className="flex gap-3 mt-auto shrink-0 pt-2">
-                <button 
-                  onClick={() => setDeleteModalOpen(false)}
-                  className="btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex-1 h-12 font-bold transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleDeleteHabit}
-                  className="btn bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 flex-1 h-12 font-bold transition-all"
-                >
-                  Delete
-                </button>
-              </div>
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    type="button" 
+                    onClick={() => setCreateSheetOpen(false)}
+                    className="btn flex-1 bg-slate-100 dark:bg-slate-800 h-14 rounded-2xl font-bold"
+                  >
+                    Close
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn flex-1 btn-primary h-14 rounded-2xl font-bold shadow-xl shadow-primary-500/30"
+                  >
+                    Create Habit
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

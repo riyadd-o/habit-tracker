@@ -3,14 +3,80 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import useHabitStore from '../hooks/useHabitStore'
 
-const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
+const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit, isEditing, onCancelEdit, onSaveEdit }) => {
   const navigate = useNavigate()
-  const { getHabitStreak, togglingHabitId } = useHabitStore()
+  const { togglingHabitId } = useHabitStore()
+  const [editTitle, setEditTitle] = useState(habit.title)
+  const [editFreq, setEditFreq] = useState(habit.frequency || 'daily')
+  const [isSaving, setIsSaving] = useState(false)
   
   const isCompletedToday = habit.completed
   const streak = habit.streak || 0
   const isAtRisk = habit.diffDays >= 2 && habit.diffDays <= 4 && !isCompletedToday
   const isToggling = togglingHabitId === habit.id
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setIsSaving(true)
+    const success = await onSaveEdit(habit.id, { title: editTitle, frequency: editFreq })
+    if (success) {
+      onCancelEdit()
+    }
+    setIsSaving(false)
+  }
+
+  if (isEditing) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="card p-6 border-primary-500 bg-primary-50/10"
+      >
+        <form onSubmit={handleSave} className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <label className="text-[10px] font-bold uppercase text-primary-600 block mb-1">Habit Title</label>
+              <input 
+                autoFocus
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="input h-12 bg-white dark:bg-slate-900 font-bold"
+                placeholder="What is your new habit?"
+              />
+            </div>
+            <div className="w-full sm:w-40">
+              <label className="text-[10px] font-bold uppercase text-primary-600 block mb-1">Frequency</label>
+              <select 
+                value={editFreq}
+                onChange={(e) => setEditFreq(e.target.value)}
+                className="input h-12 bg-white dark:bg-slate-900"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <button 
+              type="button" 
+              onClick={onCancelEdit}
+              className="btn btn-secondary px-6"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={isSaving || !editTitle.trim()}
+              className="btn btn-primary px-8 flex items-center gap-2"
+            >
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div
@@ -98,13 +164,13 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
 
         <div className="flex flex-col gap-2">
           <button 
-            onClick={() => onEdit(habit)}
+            onClick={() => onEdit(habit.id)}
             className="p-2.5 text-slate-300 hover:text-slate-600 dark:hover:text-slate-100 transition-colors"
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => onDelete()}
+            onClick={() => onDelete(habit)}
             className="p-2.5 text-slate-300 hover:text-red-500 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
