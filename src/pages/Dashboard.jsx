@@ -35,13 +35,22 @@ const Dashboard = () => {
 
   // Lock body scroll when modals are open
   useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setIsModalOpen(false)
+        setDeleteModalOpen(false)
+      }
+    }
+    
     if (isModalOpen || deleteModalOpen) {
       document.body.style.overflow = 'hidden'
+      window.addEventListener('keydown', handleEsc)
     } else {
       document.body.style.overflow = 'unset'
     }
     return () => {
       document.body.style.overflow = 'unset'
+      window.removeEventListener('keydown', handleEsc)
     }
   }, [isModalOpen, deleteModalOpen])
 
@@ -283,23 +292,24 @@ const Dashboard = () => {
       {/* Habit Creation/Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[60] overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsModalOpen(false)}
-                className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
-              />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="card w-full max-w-md relative z-10 p-6 shadow-2xl"
-              >
-                <div className="absolute top-0 left-0 w-full h-1 bg-primary-500" />
-              <div className="flex items-center justify-between mb-5">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="card w-full max-w-md relative z-10 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden p-0"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-primary-500 z-20" />
+              
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <h3 className="text-xl font-bold">{editingHabit ? 'Edit Habit' : 'Create New Habit'}</h3>
                 <button 
                   onClick={() => setIsModalOpen(false)}
@@ -309,57 +319,62 @@ const Dashboard = () => {
                 </button>
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="label text-xs">Title</label>
-                  <input 
-                    required 
-                    type="text" 
-                    placeholder="e.g. Morning Meditation"
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="input h-10 text-base focus:ring-2 focus:ring-primary-500/20" 
-                  />
-                </div>
+              {/* Scrollable Content */}
+              <div className="p-6 overflow-y-auto custom-scrollbar">
+                <form id="habit-form" onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="label text-xs">Title</label>
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder="e.g. Morning Meditation"
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      className="input h-10 text-base focus:ring-2 focus:ring-primary-500/20" 
+                    />
+                  </div>
 
-                <div>
-                  <label className="label text-xs">Frequency</label>
-                  <select 
-                    value={form.frequency}
-                    onChange={(e) => setForm({ ...form, frequency: e.target.value })}
-                    className="input h-10 text-sm"
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="label text-xs">Description (Optional)</label>
-                  <textarea 
-                    placeholder="What will this habit help you achieve?"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    className="input min-h-[70px] py-2 text-sm" 
-                  />
-                </div>
+                  <div>
+                    <label className="label text-xs">Frequency</label>
+                    <select 
+                      value={form.frequency}
+                      onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                      className="input h-10 text-sm"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="label text-xs">Description (Optional)</label>
+                    <textarea 
+                      placeholder="What will this habit help you achieve?"
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      className="input min-h-[100px] py-2 text-sm" 
+                    />
+                  </div>
+                </form>
+              </div>
 
-                <div className="pt-2 flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsModalOpen(false)}
-                    className="btn btn-secondary flex-1 h-10 text-base font-bold"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary flex-1 h-10 text-base font-bold shadow-lg shadow-primary-500/20"
-                  >
-                    {editingHabit ? 'Save' : 'Create'}
-                  </button>
-                </div>
-              </form>
+              {/* Action Footer (Sticky-like) */}
+              <div className="p-6 border-t border-slate-100 dark:border-slate-800 shrink-0 flex gap-3 bg-white dark:bg-slate-900">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="btn btn-secondary flex-1 h-10 text-base font-bold"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  form="habit-form"
+                  className="btn btn-primary flex-1 h-10 text-base font-bold shadow-lg shadow-primary-500/20"
+                >
+                  {editingHabit ? 'Save' : 'Create'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -368,31 +383,32 @@ const Dashboard = () => {
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {deleteModalOpen && (
-          <div className="fixed inset-0 z-[70] overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setDeleteModalOpen(false)}
-                className="fixed inset-0 bg-slate-950/70 backdrop-blur-md"
-              />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                className="card w-full max-w-sm relative z-10 p-8 shadow-2xl text-center"
-              >
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className="card w-full max-w-sm relative z-10 p-8 shadow-2xl text-center flex flex-col max-h-[90vh] overflow-hidden"
+            >
+              <div className="overflow-y-auto">
                 <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
-                <AlertTriangle className="w-8 h-8" />
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Delete Habit</h3>
+                <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">
+                  Are you sure you want to delete <span className="text-slate-900 dark:text-white font-bold italic">'{habitToDelete?.title}'</span>? This action cannot be undone.
+                </p>
               </div>
               
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Delete Habit</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">
-                Are you sure you want to delete <span className="text-slate-900 dark:text-white font-bold italic">'{habitToDelete?.title}'</span>? This action cannot be undone.
-              </p>
-              
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-auto shrink-0 pt-2">
                 <button 
                   onClick={() => setDeleteModalOpen(false)}
                   className="btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex-1 h-12 font-bold transition-all"

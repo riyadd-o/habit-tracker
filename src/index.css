@@ -51,19 +51,19 @@ html {
   @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
 }
 
-::-webkit-scrollbar-thumb {
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
   @apply bg-slate-200 dark:bg-slate-800 rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-300 dark:bg-slate-700;
 }
