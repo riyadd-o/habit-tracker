@@ -33,6 +33,18 @@ const Dashboard = () => {
     fetchHabits()
   }, [])
 
+  // Lock body scroll when modals are open
+  useEffect(() => {
+    if (isModalOpen || deleteModalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isModalOpen, deleteModalOpen])
+
   // --- UI Helpers ---
 
   const stats = useMemo(() => {
@@ -128,10 +140,12 @@ const Dashboard = () => {
             <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Dashboard <span className="text-slate-400 dark:text-slate-600 font-light">Overview</span>
             </h2>
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${error ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
-              <span className={`w-2 h-2 rounded-full ${error ? 'bg-red-500 animate-pulse' : 'bg-green-500 fill-current'}`} />
-              {error ? 'Server Offline' : 'Connected'}
-            </div>
+            {error && (
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500`}>
+                <span className={`w-2 h-2 rounded-full bg-red-500 animate-pulse`} />
+                Server Offline
+              </div>
+            )}
           </div>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">
             Welcome back, {user?.name || 'User'}! Track your progress today.
@@ -269,7 +283,7 @@ const Dashboard = () => {
       {/* Habit Creation/Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -353,7 +367,7 @@ const Dashboard = () => {
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {deleteModalOpen && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

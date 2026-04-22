@@ -4,17 +4,21 @@ import { Loader2, Check } from 'lucide-react';
 
 const AVATAR_OPTIONS = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Aria',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Jasper',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Finn',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=George',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Noah',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Liam',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Aria',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Lily',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Luna',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Mia',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Jasper',
   'https://api.dicebear.com/7.x/avataaars/svg?seed=Ruby',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Finn',
 ];
 
 const AvatarPicker = ({ currentAvatar, onSave, isLoading }) => {

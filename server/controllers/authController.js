@@ -90,8 +90,8 @@ export const forgotPassword = async (req, res) => {
     // Hash token for storage
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
     
-    // Set expiry (1 hour)
-    const expiry = new Date(Date.now() + 3600000);
+    // Set expiry (30 minutes)
+    const expiry = new Date(Date.now() + 1800000);
 
     // Save to DB
     await pool.query(

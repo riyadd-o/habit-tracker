@@ -80,7 +80,7 @@ const useHabitStore = create((set, get) => ({
   },
 
   getHabitStreak: (habitId) => {
-    const habit = get().habits.find(h => h.id === habitId)
+    const habit = get().habits.find(h => String(h.id) === String(habitId))
     if (!habit) return { current: 0, longest: 0 }
     return { 
       current: habit.streak || 0,
