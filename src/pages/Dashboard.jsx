@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import useAuthStore from '../hooks/useAuthStore'
 import useHabitStore from '../hooks/useHabitStore'
 import HabitCard from '../components/HabitCard'
+import Modal from '../components/Modal'
 import { Plus, Search, TrendingUp, CheckCircle, Flame, Loader2, List, WifiOff, RefreshCcw, AlertCircle, X, AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -19,28 +20,22 @@ const Dashboard = () => {
   } = useHabitStore()
   
   const [searchTerm, setSearchTerm] = useState('')
-  const [editingHabitId, setEditingHabitId] = useState(null)
   
-  // Delete Sheet State
-  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
+  // Modal States
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  
   const [habitToDelete, setHabitToDelete] = useState(null)
-
-  // Create Sheet State
-  const [createSheetOpen, setCreateSheetOpen] = useState(false)
+  const [habitToEdit, setHabitToEdit] = useState(null)
+  
   const [form, setForm] = useState({ title: '', description: '', frequency: 'daily' })
+  const [editForm, setEditForm] = useState({ title: '', description: '', frequency: 'daily' })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     fetchHabits()
   }, [])
-
-  // Lock body scroll when sheets are open
-  useEffect(() => {
-    if (deleteSheetOpen || createSheetOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-  }, [deleteSheetOpen, createSheetOpen])
 
   // --- UI Helpers ---
 
@@ -63,23 +58,49 @@ const Dashboard = () => {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault()
+    setIsSubmitting(true)
     const success = await addHabit(form)
     if (success) {
-      setCreateSheetOpen(false)
+      setCreateModalOpen(false)
       setForm({ title: '', description: '', frequency: 'daily' })
     }
+    setIsSubmitting(false)
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    if (!habitToEdit) return
+    setIsSubmitting(true)
+    const success = await updateHabit(habitToEdit.id, editForm)
+    if (success) {
+      setEditModalOpen(false)
+      setHabitToEdit(null)
+    }
+    setIsSubmitting(false)
   }
 
   const confirmDelete = (habit) => {
     setHabitToDelete(habit)
-    setDeleteSheetOpen(true)
+    setDeleteModalOpen(true)
+  }
+
+  const openEditModal = (habit) => {
+    setHabitToEdit(habit)
+    setEditForm({ 
+      title: habit.title, 
+      description: habit.description || '', 
+      frequency: habit.frequency || 'daily' 
+    })
+    setEditModalOpen(true)
   }
 
   const handleDeleteHabit = async () => {
     if (habitToDelete) {
+      setIsSubmitting(true)
       await deleteHabit(habitToDelete.id)
-      setDeleteSheetOpen(false)
+      setDeleteModalOpen(false)
       setHabitToDelete(null)
+      setIsSubmitting(false)
     }
   }
 
@@ -137,7 +158,7 @@ const Dashboard = () => {
             />
           </div>
           <button 
-            onClick={() => setCreateSheetOpen(true)}
+            onClick={() => setCreateModalOpen(true)}
             className="btn btn-primary h-12 px-6 w-full sm:w-auto flex items-center gap-2 text-lg font-bold shadow-lg shadow-primary-500/20"
           >
             <Plus className="w-5 h-5" />
@@ -152,134 +173,167 @@ const Dashboard = () => {
               <HabitCard 
                 key={habit.id} 
                 habit={habit} 
-                isEditing={editingHabitId === habit.id}
                 toggleCompletion={() => toggleCompletion(habit.id)}
                 onDelete={() => confirmDelete(habit)}
-                onEdit={(id) => setEditingHabitId(id)}
-                onCancelEdit={() => setEditingHabitId(null)}
-                onSaveEdit={updateHabit}
+                onEdit={openEditModal}
               />
             ))}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* DELETE BOTTOM SHEET */}
-      <AnimatePresence>
-        {deleteSheetOpen && (
-          <div className="fixed inset-0 z-[70] flex items-end justify-center">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDeleteSheetOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-            />
-            <motion.div 
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 shadow-2xl z-10"
+      {/* CREATE MODAL */}
+      <Modal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        title="Create New Habit"
+        footer={
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setCreateModalOpen(false)}
+              className="btn flex-1 bg-slate-100 dark:bg-slate-800 h-12 rounded-xl font-bold text-slate-600 dark:text-slate-300"
             >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-8" />
-              
-              <div className="text-center space-y-4 mb-8">
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto">
-                  <AlertTriangle className="w-8 h-8" />
-                </div>
-                <h3 className="text-2xl font-black">Delete Habit</h3>
-                <p className="text-slate-500">
-                  Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">'{habitToDelete?.title}'</span>? <br/> This action cannot be undone.
-                </p>
-              </div>
-              
-              <div className="flex flex-col gap-3">
-                <button 
-                  onClick={handleDeleteHabit}
-                  className="btn bg-red-500 text-white hover:bg-red-600 h-14 rounded-2xl font-bold text-lg transition-all active:scale-95"
-                >
-                  Delete Habit
-                </button>
-                <button 
-                  onClick={() => setDeleteSheetOpen(false)}
-                  className="btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 h-14 rounded-2xl font-bold text-lg transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* CREATE BOTTOM SHEET */}
-      <AnimatePresence>
-        {createSheetOpen && (
-          <div className="fixed inset-0 z-[70] flex items-end justify-center">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setCreateSheetOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-            />
-            <motion.div 
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 shadow-2xl z-10"
+              Cancel
+            </button>
+            <button 
+              onClick={handleCreateSubmit}
+              disabled={isSubmitting || !form.title.trim()}
+              className="btn flex-1 btn-primary h-12 rounded-xl font-bold shadow-lg shadow-primary-500/20"
             >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-8" />
-              <h3 className="text-2xl font-black mb-6 text-center">New Habit</h3>
-              
-              <form onSubmit={handleCreateSubmit} className="space-y-6">
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-slate-400 block mb-2 px-1">Habit Title</label>
-                  <input 
-                    required 
-                    placeholder="e.g. Read for 30 minutes"
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className="input h-14 text-lg bg-slate-50 dark:bg-slate-800/50" 
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-2 px-1">Frequency</label>
-                    <select 
-                      value={form.frequency}
-                      onChange={(e) => setForm({ ...form, frequency: e.target.value })}
-                      className="input h-14 bg-slate-50 dark:bg-slate-800/50"
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="flex gap-3 pt-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setCreateSheetOpen(false)}
-                    className="btn flex-1 bg-slate-100 dark:bg-slate-800 h-14 rounded-2xl font-bold"
-                  >
-                    Close
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn flex-1 btn-primary h-14 rounded-2xl font-bold shadow-xl shadow-primary-500/30"
-                  >
-                    Create Habit
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Create Habit'}
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+        }
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-6">
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Habit Title</label>
+            <input 
+              required 
+              autoFocus
+              placeholder="e.g. Read for 30 minutes"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="input h-12 bg-slate-50 dark:bg-slate-800/50" 
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Description (Optional)</label>
+            <textarea 
+              placeholder="Why is this habit important?"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="input min-h-[100px] py-3 bg-slate-50 dark:bg-slate-800/50 resize-none" 
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Frequency</label>
+            <select 
+              value={form.frequency}
+              onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+              className="input h-12 bg-slate-50 dark:bg-slate-800/50"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+        </form>
+      </Modal>
+
+      {/* EDIT MODAL */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Edit Habit"
+        footer={
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setEditModalOpen(false)}
+              className="btn flex-1 bg-slate-100 dark:bg-slate-800 h-12 rounded-xl font-bold text-slate-600 dark:text-slate-300"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleEditSubmit}
+              disabled={isSubmitting || !editForm.title.trim()}
+              className="btn flex-1 btn-primary h-12 rounded-xl font-bold shadow-lg shadow-primary-500/20"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Save Changes'}
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-6">
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Habit Title</label>
+            <input 
+              required 
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              className="input h-12 bg-slate-50 dark:bg-slate-800/50" 
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Description</label>
+            <textarea 
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              className="input min-h-[100px] py-3 bg-slate-50 dark:bg-slate-800/50 resize-none" 
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Frequency</label>
+            <select 
+              value={editForm.frequency}
+              onChange={(e) => setEditForm({ ...editForm, frequency: e.target.value })}
+              className="input h-12 bg-slate-50 dark:bg-slate-800/50"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+        </form>
+      </Modal>
+
+      {/* DELETE MODAL */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Habit"
+        footer={
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setDeleteModalOpen(false)}
+              className="btn flex-1 bg-slate-100 dark:bg-slate-800 h-12 rounded-xl font-bold text-slate-600 dark:text-slate-300"
+            >
+              No, Keep it
+            </button>
+            <button 
+              onClick={handleDeleteHabit}
+              disabled={isSubmitting}
+              className="btn flex-1 bg-red-500 text-white hover:bg-red-600 h-12 rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Yes, Delete'}
+            </button>
+          </div>
+        }
+      >
+        <div className="text-center space-y-4 py-4">
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-500/10 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-4">
+            <AlertTriangle className="w-10 h-10" />
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+            Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">'{habitToDelete?.title}'</span>?
+          </p>
+          <p className="text-sm text-slate-400">
+            This action is permanent and cannot be undone. All streak data will be lost.
+          </p>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -1,13 +1,22 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ListTodo, Plus, Search, Filter, HelpCircle, X, CheckCircle2, Flame, Award } from 'lucide-react'
+import { ListTodo, Plus, Search, Filter, HelpCircle, X, CheckCircle2, Flame, Award, AlertTriangle, Loader2 } from 'lucide-react'
 import useHabitStore from '../hooks/useHabitStore'
 import HabitCard from '../components/HabitCard'
+import Modal from '../components/Modal'
 
 const Habits = () => {
-  const { habits, toggleCompletion, deleteHabit, getHabitStreak } = useHabitStore()
+  const { habits, toggleCompletion, deleteHabit, updateHabit, getHabitStreak } = useHabitStore()
   const [showGuide, setShowGuide] = useState(false)
   
+  // Modal States
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [habitToDelete, setHabitToDelete] = useState(null)
+  const [habitToEdit, setHabitToEdit] = useState(null)
+  const [editForm, setEditForm] = useState({ title: '', description: '', frequency: 'daily' })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const stats = useMemo(() => {
     const total = habits.length
     const completedToday = habits.filter(h => h.completed).length
@@ -16,6 +25,43 @@ const Habits = () => {
     
     return { total, rate, streaks }
   }, [habits, getHabitStreak])
+
+  const confirmDelete = (habit) => {
+    setHabitToDelete(habit)
+    setDeleteModalOpen(true)
+  }
+
+  const openEditModal = (habit) => {
+    setHabitToEdit(habit)
+    setEditForm({ 
+      title: habit.title, 
+      description: habit.description || '', 
+      frequency: habit.frequency || 'daily' 
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleDeleteHabit = async () => {
+    if (habitToDelete) {
+      setIsSubmitting(true)
+      await deleteHabit(habitToDelete.id)
+      setDeleteModalOpen(false)
+      setHabitToDelete(null)
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    if (!habitToEdit) return
+    setIsSubmitting(true)
+    const success = await updateHabit(habitToEdit.id, editForm)
+    if (success) {
+      setEditModalOpen(false)
+      setHabitToEdit(null)
+    }
+    setIsSubmitting(false)
+  }
 
   return (
     <div className="space-y-8 pb-20">
@@ -49,8 +95,8 @@ const Habits = () => {
                 key={habit.id}
                 habit={habit}
                 toggleCompletion={toggleCompletion}
-                onDelete={deleteHabit}
-                onEdit={() => {}} // Could link to dashboard edit if needed
+                onDelete={confirmDelete}
+                onEdit={openEditModal}
               />
             ))}
           </div>
@@ -78,82 +124,147 @@ const Habits = () => {
       </div>
 
       {/* Guide Modal */}
-      <AnimatePresence>
-        {showGuide && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowGuide(false)}
-              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="card w-full max-w-lg relative z-10 p-8 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
-            >
-              <button 
-                onClick={() => setShowGuide(false)}
-                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-primary-500/10 text-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <HelpCircle className="w-10 h-10" />
-                </div>
-                <h3 className="text-2xl font-bold">How HabitFlow Works</h3>
-                <p className="text-slate-500">Master your consistency in 3 simple steps</p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                  <div className="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
-                  <div>
-                    <h4 className="font-bold flex items-center gap-2">
-                      <Plus className="w-4 h-4 text-blue-500" />
-                      Create a Habit
-                    </h4>
-                    <p className="text-sm text-slate-500 mt-1">Add tasks you want to repeat daily or weekly. Set a title and description to stay motivated.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                  <div className="bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
-                  <div>
-                    <h4 className="font-bold flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      Daily Check-ins
-                    </h4>
-                    <p className="text-sm text-slate-500 mt-1">Mark your habits as "Done" every day. Each completion records a log in our database to track your journey.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                  <div className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
-                  <div>
-                    <h4 className="font-bold flex items-center gap-2">
-                      <Flame className="w-4 h-4 text-orange-500" />
-                      Build Streaks
-                    </h4>
-                    <p className="text-sm text-slate-500 mt-1">Consistency is key! Completing habits on consecutive days builds your streak. Don't break the chain!</p>
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => setShowGuide(false)}
-                className="btn btn-primary w-full h-12 mt-8 font-bold text-lg"
-              >
-                Got it, let's go!
-              </button>
-            </motion.div>
+      <Modal
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="How HabitFlow Works"
+        footer={
+          <button 
+            onClick={() => setShowGuide(false)}
+            className="btn btn-primary w-full h-12 font-bold text-lg rounded-xl"
+          >
+            Got it, let's go!
+          </button>
+        }
+      >
+        <div className="space-y-6 py-2">
+          <div className="flex gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+            <div className="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+            <div>
+              <h4 className="font-bold flex items-center gap-2">
+                <Plus className="w-4 h-4 text-blue-500" />
+                Create a Habit
+              </h4>
+              <p className="text-sm text-slate-500 mt-1">Add tasks you want to repeat daily or weekly. Set a title and description to stay motivated.</p>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="flex gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+            <div className="bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+            <div>
+              <h4 className="font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                Daily Check-ins
+              </h4>
+              <p className="text-sm text-slate-500 mt-1">Mark your habits as "Done" every day. Each completion records a log in our database to track your journey.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+            <div className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+            <div>
+              <h4 className="font-bold flex items-center gap-2">
+                <Flame className="w-4 h-4 text-orange-500" />
+                Build Streaks
+              </h4>
+              <p className="text-sm text-slate-500 mt-1">Consistency is key! Completing habits on consecutive days builds your streak. Don't break the chain!</p>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* EDIT MODAL */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Edit Habit"
+        footer={
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setEditModalOpen(false)}
+              className="btn flex-1 bg-slate-100 dark:bg-slate-800 h-12 rounded-xl font-bold text-slate-600 dark:text-slate-300"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleEditSubmit}
+              disabled={isSubmitting || !editForm.title.trim()}
+              className="btn flex-1 btn-primary h-12 rounded-xl font-bold shadow-lg shadow-primary-500/20"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Save Changes'}
+            </button>
+          </div>
+        }
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-6">
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Habit Title</label>
+            <input 
+              required 
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              className="input h-12 bg-slate-50 dark:bg-slate-800/50" 
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Description</label>
+            <textarea 
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              className="input min-h-[100px] py-3 bg-slate-50 dark:bg-slate-800/50 resize-none" 
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Frequency</label>
+            <select 
+              value={editForm.frequency}
+              onChange={(e) => setEditForm({ ...editForm, frequency: e.target.value })}
+              className="input h-12 bg-slate-50 dark:bg-slate-800/50"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+        </form>
+      </Modal>
+
+      {/* DELETE MODAL */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Habit"
+        footer={
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setDeleteModalOpen(false)}
+              className="btn flex-1 bg-slate-100 dark:bg-slate-800 h-12 rounded-xl font-bold text-slate-600 dark:text-slate-300"
+            >
+              No, Keep it
+            </button>
+            <button 
+              onClick={handleDeleteHabit}
+              disabled={isSubmitting}
+              className="btn flex-1 bg-red-500 text-white hover:bg-red-600 h-12 rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Yes, Delete'}
+            </button>
+          </div>
+        }
+      >
+        <div className="text-center space-y-4 py-4">
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-500/10 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-4">
+            <AlertTriangle className="w-10 h-10" />
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+            Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">'{habitToDelete?.title}'</span>?
+          </p>
+          <p className="text-sm text-slate-400">
+            This action is permanent and cannot be undone. All streak data will be lost.
+          </p>
+        </div>
+      </Modal>
     </div>
   )
 }

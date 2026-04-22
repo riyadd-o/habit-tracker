@@ -1,9 +1,6 @@
-import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import Modal from './Modal'
 
 const TermsModal = ({ isOpen, onClose }) => {
-  if (!isOpen) return null
-
   const sections = [
     {
       title: "1. Acceptance of Terms",
@@ -28,70 +25,43 @@ const TermsModal = ({ isOpen, onClose }) => {
   ]
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
-      />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-        className="card w-full max-w-2xl relative z-10 p-0 shadow-2xl overflow-hidden bg-white dark:bg-slate-900 border-none max-h-[85vh] flex flex-col"
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-primary-500/10 rounded-xl flex items-center justify-center">
-                <div className="w-3 h-3 bg-primary-500 rounded-full animate-pulse" />
-             </div>
-             <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">Terms of Service</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Effective April 2026</p>
-             </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Terms of Service"
+      maxWidth="650px"
+      footer={
+        <button 
+          onClick={onClose} 
+          className="btn btn-primary w-full h-14 font-black text-lg shadow-xl shadow-primary-500/20 active:scale-[0.98] transition-all"
+        >
+          I Understand
+        </button>
+      }
+    >
+      <div className="space-y-8">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest -mt-4 mb-4 px-1">Effective April 2026</p>
+        
+        {sections.map((section, i) => (
+          <div key={i} className="space-y-3">
+            <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-primary-500 rounded-full" />
+              {section.title}
+            </h4>
+            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed pl-3.5 border-l border-slate-100 dark:border-slate-800">
+              {section.content}
+            </p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-2.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-all shadow-sm active:scale-90"
-          >
-            <X className="w-5 h-5 text-slate-500" />
-          </button>
-        </div>
+        ))}
         
-        {/* Content */}
-        <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-           {sections.map((section, i) => (
-             <div key={i} className="space-y-3">
-                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                   <span className="w-1.5 h-4 bg-primary-500 rounded-full" />
-                   {section.title}
-                </h4>
-                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed pl-3.5 border-l border-slate-100 dark:border-slate-800">
-                   {section.content}
-                </p>
-             </div>
-           ))}
-           
-           <div className="p-4 rounded-2xl bg-primary-500/5 border border-primary-500/10 text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
-              By clicking "I Understand", you acknowledge that you have read and agreed to these terms. If you have any questions, please contact support@habitflow.io.
-           </div>
+        <div className="p-4 rounded-2xl bg-primary-500/5 border border-primary-500/10 text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
+          By clicking "I Understand", you acknowledge that you have read and agreed to these terms. If you have any questions, please contact support@habitflow.io.
         </div>
-        
-        {/* Footer */}
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-           <button 
-             onClick={onClose} 
-             className="btn btn-primary w-full h-14 font-black text-lg shadow-xl shadow-primary-500/20 active:scale-[0.98] transition-all"
-           >
-             I Understand
-           </button>
-        </div>
-      </motion.div>
-    </div>
+      </div>
+    </Modal>
   )
 }
+
+export default TermsModal
 
 export default TermsModal
