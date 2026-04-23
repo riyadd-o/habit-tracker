@@ -110,7 +110,7 @@ const Dashboard = () => {
     <div className="h-full flex flex-col items-center justify-center space-y-4 py-32 animate-fade-in">
       <Loader2 className="w-16 h-16 text-primary-500 animate-spin" />
       <div className="text-center">
-        <p className="text-slate-900 dark:text-white font-bold text-xl">Loading your dashboard</p>
+        <p className="text-slate-900 dark:text-white font-bold text-xl">Loading your habits...</p>
       </div>
     </div>
   )
@@ -151,7 +151,7 @@ const Dashboard = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Search habits..." 
+              placeholder="Search your habits..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input pl-11 h-12 bg-white dark:bg-slate-900 shadow-sm border-slate-100 dark:border-slate-800"
@@ -169,15 +169,21 @@ const Dashboard = () => {
         {/* Habits List */}
         <div className="grid grid-cols-1 gap-4">
           <AnimatePresence mode="popLayout" initial={false}>
-            {filteredHabits.sort((a,b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1)).map(habit => (
-              <HabitCard 
-                key={habit.id} 
-                habit={habit} 
-                toggleCompletion={() => toggleCompletion(habit.id)}
-                onDelete={() => confirmDelete(habit)}
-                onEdit={openEditModal}
-              />
-            ))}
+            {filteredHabits.length > 0 ? (
+              filteredHabits.sort((a,b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1)).map(habit => (
+                <HabitCard 
+                  key={habit.id} 
+                  habit={habit} 
+                  toggleCompletion={() => toggleCompletion(habit.id)}
+                  onDelete={() => confirmDelete(habit)}
+                  onEdit={openEditModal}
+                />
+              ))
+            ) : (
+              <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+                <p className="text-slate-500">No habits found. Start by creating a new one!</p>
+              </div>
+            )}
           </AnimatePresence>
         </div>
       </div>
@@ -211,7 +217,7 @@ const Dashboard = () => {
             <input 
               required 
               autoFocus
-              placeholder="e.g. Read for 30 minutes"
+              placeholder="e.g. Drink 2L Water"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               className="input h-12 bg-slate-50 dark:bg-slate-800/50" 
@@ -219,9 +225,9 @@ const Dashboard = () => {
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Description (Optional)</label>
+            <label className="text-[10px] font-bold uppercase text-primary-600 block mb-2 px-1">Description</label>
             <textarea 
-              placeholder="Why is this habit important?"
+              placeholder="Why is this habit important to you?"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="input min-h-[100px] py-3 bg-slate-50 dark:bg-slate-800/50 resize-none" 

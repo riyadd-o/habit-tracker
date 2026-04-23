@@ -23,7 +23,7 @@ const getTargetDateString = () => {
 };
 
 export const notifyDueUsers = async (force = false) => {
-  console.log(`🚀 Running daily reminder & streak warning engine... ${force ? "[FORCE MODE]" : ""}`);
+  console.log(`🚀 Running daily reminder engine... ${force ? "[FORCE MODE]" : ""}`);
   const now = new Date();
   
   const addisAbabaTime = new Intl.DateTimeFormat('en-GB', {
@@ -34,60 +34,41 @@ export const notifyDueUsers = async (force = false) => {
   }).format(now);
   
   const [currentHour, currentMin] = addisAbabaTime.split(':').map(Number);
+  const currentTimeTotalMinutes = currentHour * 60 + currentMin;
+
   const todayStr = getTargetDateString();
   const todayDate = new Date(todayStr);
 
   try {
+    // We fetch dates as text to avoid timezone shifting in JS
     const usersRes = await pool.query(
-      `SELECT id, name, email, reminder_time, last_notification_sent, last_reminder_time_sent 
+      `SELECT id, name, email, reminder_time, 
+              last_notification_sent::text as last_notification_sent_str, 
+              last_streak_warning::text as last_streak_warning_str,
+              last_reminder_time_sent 
        FROM users 
        WHERE daily_reminder = true`
     );
     const users = usersRes.rows;
 
-    const scheduledUsers = users.filter(user => {
-      if (force) return true;
-
-      const timeStr = user.reminder_time || '08:00';
-      const [h, m] = timeStr.split(':').map(Number);
-      
-      // 1. Time Match Check (Strict ±1 minute window)
-      // Check if current hour matches AND current minute is exactly h:m
-      const isExactlyTime = (currentHour === h && currentMin === m);
-      
-      // 2. Date/Time Tracking Check
-      let alreadySentToday = false;
-      if (user.last_notification_sent) {
-        const lastSentDateStr = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'Africa/Addis_Ababa',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).format(new Date(user.last_notification_sent));
-        
-        if (lastSentDateStr === todayStr) {
-          alreadySentToday = true;
-        }
-      }
-      
-      // Smart Condition:
-      // Send ONLY if:
-      // - Current time is exactly the reminder time
-      // AND (never sent today OR user changed their reminder time since last send)
-      const shouldNotify = isExactlyTime && (!alreadySentToday || user.last_reminder_time_sent !== timeStr);
-
-      if (alreadySentToday && user.last_reminder_time_sent === timeStr && isExactlyTime) {
-        // console.log(`[CRON] Skip ${user.email}: Already notified for ${timeStr} today.`);
-      }
-      
-      return shouldNotify;
-    });
-
-    if (scheduledUsers.length === 0) return;
-
-    for (const user of scheduledUsers) {
+    for (const user of users) {
       try {
-        // 1. Fetch Incomplete Habits
+        const rawTime = user.reminder_time || '08:00';
+        const timeStr = rawTime.trim(); // Normalize
+        const [h, m] = timeStr.split(':').map(Number);
+        const userTimeTotalMinutes = h * 60 + m;
+        
+        // 1. Time Check: Must be at or after reminder time
+        const isTimeReached = currentTimeTotalMinutes >= userTimeTotalMinutes;
+        if (!isTimeReached && !force) continue;
+
+        // 2. Already Sent Checks
+        const alreadySentReminder = user.last_notification_sent_str === todayStr;
+        const alreadySentWarning = user.last_streak_warning_str === todayStr;
+        const lastSentTime = (user.last_reminder_time_sent || '').trim();
+        const timeChanged = lastSentTime !== timeStr;
+
+        // 3. Fetch Incomplete Habits
         const habitsRes = await pool.query(
           `SELECT h.id, h.title, h.streak, h.last_completed_date 
            FROM habits h 
@@ -99,7 +80,7 @@ export const notifyDueUsers = async (force = false) => {
         );
         const incompleteHabits = habitsRes.rows;
 
-        // 2. Identify At-Risk Habits (Streak Warning)
+        // 4. Identify At-Risk Habits
         const atRiskHabits = incompleteHabits.filter(h => {
           if (!h.streak || h.streak <= 0 || !h.last_completed_date) return false;
           
@@ -108,32 +89,58 @@ export const notifyDueUsers = async (force = false) => {
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
           h.diffDays = diffDays;
-          return diffDays === 2 || diffDays === 3;
+          return diffDays >= 2 && diffDays <= 4;
         });
 
-        // 3. Smart Send: ONLY if there are pending habits
+        // 5. Decision Logic
         if (incompleteHabits.length > 0) {
           if (atRiskHabits.length > 0) {
-            console.log(`[CRON] 🚨 Sending streak warning to: ${user.email}`);
-            await sendStreakWarning(user.email, user.name, atRiskHabits);
-          } else {
-            console.log(`[CRON] ✉️ Sending daily reminder to: ${user.email}`);
-            await sendDailyReminder(user.email, user.name, incompleteHabits);
-          }
+            // STREAK WARNING
+            if (!alreadySentWarning || timeChanged || force) {
+              // UPDATE FIRST to prevent concurrent runs from double-sending
+              await pool.query(
+                `UPDATE users SET 
+                  last_streak_warning = $1, 
+                  last_notification_sent = $1, 
+                  last_reminder_time_sent = $2 
+                 WHERE id = $3`,
+                [todayStr, timeStr, user.id]
+              );
 
-          // 4. Update tracking columns immediately to prevent re-sending in same minute
-          await pool.query(
-            'UPDATE users SET last_notification_sent = $1, last_reminder_time_sent = $2 WHERE id = $3', 
-            [todayStr, user.reminder_time || '08:00', user.id]
-          );
+              console.log(`[CRON] 🚨 Sending streak warning to: ${user.email}`);
+              await sendStreakWarning(user.email, user.name, atRiskHabits);
+            } else {
+              // console.log(`[CRON] Skip streak warning for ${user.email} (already sent today)`);
+            }
+          } else {
+            // DAILY REMINDER
+            if (!alreadySentReminder || timeChanged || force) {
+              await pool.query(
+                `UPDATE users SET 
+                  last_notification_sent = $1, 
+                  last_reminder_time_sent = $2 
+                 WHERE id = $3`,
+                [todayStr, timeStr, user.id]
+              );
+
+              console.log(`[CRON] ✉️ Sending daily reminder to: ${user.email}`);
+              await sendDailyReminder(user.email, user.name, incompleteHabits);
+            } else {
+              // console.log(`[CRON] Skip daily reminder for ${user.email} (already sent today)`);
+            }
+          }
         } else {
-          // Marking as processed for this time slot even if no habits are incomplete
-          // to ensure we don't spam or waste queries if they check/uncheck habits
-          if (!force) {
-            await pool.query(
-              'UPDATE users SET last_notification_sent = $1, last_reminder_time_sent = $2 WHERE id = $3', 
-              [todayStr, user.reminder_time || '08:00', user.id]
-            );
+          // No incomplete habits - Mark as processed for today
+          if ((!alreadySentReminder && !alreadySentWarning) || timeChanged) {
+            if (!force) {
+              await pool.query(
+                `UPDATE users SET 
+                  last_notification_sent = $1, 
+                  last_reminder_time_sent = $2 
+                 WHERE id = $3`,
+                [todayStr, timeStr, user.id]
+              );
+            }
           }
         }
       } catch (innerErr) {

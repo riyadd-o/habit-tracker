@@ -28,7 +28,7 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
             ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
             : 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'
           }`}>
-            {habit.frequency || 'daily'}
+            {habit.frequency === 'daily' ? 'Daily' : 'Weekly'}
           </span>
         </div>
         <p className={`text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2 ${isCompletedToday ? 'opacity-50' : ''}`}>
@@ -41,12 +41,12 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
               {isAtRisk ? (
                 <div className="flex items-center gap-1.5">
                   <span className="animate-pulse">⚠️</span>
-                  <span className="text-xs font-bold leading-none">Streak at risk</span>
+                  <span className="text-xs font-bold leading-none">STREAK AT RISK</span>
                 </div>
               ) : (
                 <>
                   <Flame className={`w-4 h-4 ${streak > 0 ? 'fill-current' : ''}`} />
-                  <span className="text-xs font-bold leading-none">{streak} day streak</span>
+                  <span className="text-xs font-bold leading-none">{streak} Day Streak</span>
                 </>
               )}
             </div>
@@ -54,7 +54,7 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
           {streak === 0 && !isAtRisk && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 dark:bg-slate-900/40 text-slate-400 rounded-lg">
               <Flame className="w-4 h-4" />
-              <span className="text-xs font-bold leading-none">0 day streak</span>
+              <span className="text-xs font-bold leading-none">0 Day Streak</span>
             </div>
           )}
           <button 
@@ -62,7 +62,7 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
             className="text-xs font-semibold text-slate-400 hover:text-primary-500 transition-colors flex items-center gap-1"
           >
             <Calendar className="w-4 h-4" />
-            View Detail
+            Manage
           </button>
         </div>
       </div>
@@ -115,6 +115,5 @@ const HabitCard = ({ habit, toggleCompletion, onDelete, onEdit }) => {
     </motion.div>
   )
 }
-
 
 export default HabitCard

@@ -9,32 +9,32 @@ const Settings = () => {
   const sections = [
     { 
       icon: User, 
-      label: 'Profile Settings', 
-      desc: 'Manage your public profile and avatar',
+      label: 'Account Profile', 
+      desc: 'Update your personal information, email, and avatar.',
       path: '/settings/profile'
     },
     { 
       icon: Bell, 
       label: 'Notifications', 
-      desc: 'Configure how you receive alerts',
+      desc: 'Manage how and when you receive reminders and alerts.',
       path: '/settings/notifications'
     },
     { 
       icon: Laptop, 
       label: 'Appearance', 
-      desc: 'Customize your interface experience', 
+      desc: 'Customize your interface with Dark Mode and light themes.', 
       extra: <ThemeToggle /> 
     },
     { 
       icon: Lock, 
       label: 'Security', 
-      desc: 'Change your password and secure account',
+      desc: 'Update your password and manage two-factor authentication.',
       path: '/settings/security'
     },
     { 
       icon: CreditCard, 
-      label: 'Billing', 
-      desc: 'Manage your subscription and invoices',
+      label: 'Billing & Plans', 
+      desc: 'Manage your subscription and view payment history.',
       path: '/settings/billing'
     },
   ]
@@ -43,7 +43,7 @@ const Settings = () => {
     <div className="max-w-4xl space-y-8">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-        <p className="text-slate-500">Configure your account preferences and application experience.</p>
+        <p className="text-slate-500">Customize your experience and manage your account preferences.</p>
       </div>
 
       <div className="space-y-4">

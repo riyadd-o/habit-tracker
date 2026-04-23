@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { CheckCircle2, ArrowRight, Zap, Target, BarChart3, Shield } from 'lucide-react'
+import { CheckCircle2, ArrowRight, Zap, Target, BarChart3, Shield, LayoutDashboard } from 'lucide-react'
 import ThemeToggle from '../components/ThemeToggle'
 import useAuthStore from '../hooks/useAuthStore'
 
@@ -10,23 +10,23 @@ const Landing = () => {
   const features = [
     {
       icon: <Zap className="w-6 h-6 text-yellow-500" />,
-      title: "Daily Streaks",
-      description: "Build momentum with visual streak counters that keep you motivated every single day."
+      title: 'Power of Streaks',
+      description: 'Build unstoppable momentum with our visual streak tracking system. Stay motivated by seeing your progress grow day after day.'
     },
     {
       icon: <Target className="w-6 h-6 text-primary-500" />,
-      title: "Goal Tracking",
-      description: "Set clear objectives and watch your progress unfold through intuitive visual markers."
+      title: 'Goal Oriented',
+      description: 'Set clear objectives and break them down into daily routines. HabitFlow helps you stay focused on what truly matters for your growth.'
     },
     {
       icon: <BarChart3 className="w-6 h-6 text-blue-500" />,
-      title: "Detailed Analytics",
-      description: "Understand your patterns with comprehensive charts and habit completion insights."
+      title: 'Smart Analytics',
+      description: 'Deep dive into your behavior with beautiful, interactive charts. Understand your patterns and identify where you can improve.'
     },
     {
       icon: <Shield className="w-6 h-6 text-purple-500" />,
-      title: "Privacy First",
-      description: "Your data stays on your device. Secure, private, and always available when you need it."
+      title: 'Privacy First',
+      description: 'Your habits are personal. We use bank-grade encryption to ensure your data stays private and accessible only to you.'
     }
   ]
 
@@ -51,10 +51,10 @@ const Landing = () => {
             ) : (
               <>
                 <Link to="/login" className="text-sm font-medium hover:text-primary-500 transition-colors">
-                  Login
+                  Sign In
                 </Link>
                 <Link to="/register" className="btn btn-primary">
-                  Get Started
+                  Get Started Free
                 </Link>
               </>
             )}
@@ -77,24 +77,27 @@ const Landing = () => {
             transition={{ duration: 0.5 }}
           >
             <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-full border border-primary-100 dark:border-primary-800">
-              Transform Your Life
+              Trusted by 50,000+ users worldwide
             </span>
             <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-400">
-              Build better habits <br /> 
-              <span className="text-primary-500">every single day.</span>
+              Transform your life <br /> 
+              <span className="text-primary-500">one habit at a time.</span>
             </h1>
             <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-              HabitFlow helps you track, visualize, and maintain the daily habits that lead to lasting success. Simple, elegant, and effective.
+              Build better routines, track your progress visually, and achieve your goals with the most beautiful habit tracker on the web.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register" className="btn btn-primary px-8 py-4 text-lg w-full sm:w-auto flex items-center gap-2 group">
-                Start Tracking Free
+              <Link to={user ? "/dashboard" : "/register"} className="btn btn-primary px-8 py-4 text-lg w-full sm:w-auto flex items-center gap-2 group">
+                {user ? "Go to Dashboard" : "Start Your Journey"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/login" className="btn btn-secondary px-8 py-4 text-lg w-full sm:w-auto">
-                View Demo
-              </Link>
+              <button 
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                className="btn btn-secondary px-8 py-4 text-lg w-full sm:w-auto"
+              >
+                Learn How it Works
+              </button>
             </div>
           </motion.div>
 
@@ -125,7 +128,7 @@ const Landing = () => {
               {/* Mockup Dashboard Content */}
               <div className="p-6 grid grid-cols-12 gap-6 h-full overflow-hidden">
                 {/* Sidebar Mockup */}
-                <div className="col-span-3 space-y-4">
+                <div className="col-span-3 space-y-4 text-left">
                   <div className="p-3 bg-primary-500/10 rounded-xl border border-primary-500/20">
                     <div className="h-4 w-20 bg-primary-500/40 rounded-md mb-2" />
                     <div className="h-2 w-full bg-primary-500/20 rounded-full" />
@@ -139,13 +142,13 @@ const Landing = () => {
                 </div>
 
                 {/* Main Content Mockup */}
-                <div className="col-span-9 space-y-6">
+                <div className="col-span-9 space-y-6 text-left">
                   {/* Replacement for Stats Row: Consistency Heatmap & Focus */}
                   <div className="grid grid-cols-12 gap-4">
                     <div className="col-span-7 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                       <div className="text-[10px] font-bold text-slate-400 uppercase mb-3 px-1 flex justify-between">
-                        <span>Consistency Heatmap</span>
-                        <span className="text-emerald-500 font-bold">Excellent</span>
+                        <span>Activity History</span>
+                        <span className="text-emerald-500 font-bold">COMPLETED</span>
                       </div>
                       <div className="grid grid-cols-7 gap-1">
                         {[...Array(28)].map((_, i) => (
@@ -166,7 +169,7 @@ const Landing = () => {
                     </div>
                     <div className="col-span-5 flex flex-col gap-3">
                       <div className="flex-1 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-col justify-center">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">Focus Skills</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">Quick Insights</div>
                         <div className="flex flex-wrap gap-1.5">
                            {['Health', 'Focus', 'Zen'].map(s => (
                              <span key={s} className="px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-500 text-[8px] font-bold border border-primary-500/20">{s}</span>
@@ -175,7 +178,7 @@ const Landing = () => {
                       </div>
                       <div className="bg-gradient-to-br from-orange-400 to-rose-500 p-3 rounded-2xl text-white flex items-center justify-between shadow-lg shadow-orange-500/20">
                          <div>
-                            <div className="text-[8px] font-bold opacity-80 uppercase">Top Streak</div>
+                            <div className="text-[8px] font-bold opacity-80 uppercase">Active Streak</div>
                             <div className="text-sm font-black leading-none">24 DAYS</div>
                          </div>
                          <Zap className="w-5 h-5 fill-white" />
@@ -220,11 +223,11 @@ const Landing = () => {
                         <div className="flex items-end gap-2 h-20">
                            {[40, 70, 45, 90, 65, 80, 50, 95, 75, 85].map((h, i) => (
                              <motion.div 
-                               key={i} 
-                               initial={{ height: 0 }}
-                               animate={{ height: `${h}%` }}
-                               transition={{ delay: 0.5 + (i * 0.05) }}
-                               className="flex-1 bg-gradient-to-t from-primary-600 to-primary-400 rounded-sm opacity-60 group-hover/graph:opacity-100 transition-opacity" 
+                                key={i} 
+                                initial={{ height: 0 }}
+                                animate={{ height: `${h}%` }}
+                                transition={{ delay: 0.5 + (i * 0.05) }}
+                                className="flex-1 bg-gradient-to-t from-primary-600 to-primary-400 rounded-sm opacity-60 group-hover/graph:opacity-100 transition-opacity" 
                               />
                            ))}
                         </div>
@@ -238,11 +241,11 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-6 bg-slate-50 dark:bg-slate-900/50">
+      <section id="features" className="py-20 px-6 bg-slate-50 dark:bg-slate-900/50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything you need to succeed</h2>
-            <p className="text-slate-600 dark:text-slate-400">Simple tools designed to help you stay consistent.</p>
+            <p className="text-slate-600 dark:text-slate-400">HabitFlow provides the tools and insights necessary to build lasting changes.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -272,12 +275,12 @@ const Landing = () => {
       <section className="py-20 px-6 text-center">
         <div className="max-w-3xl mx-auto p-12 rounded-3xl bg-slate-900 dark:bg-primary-600 text-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 relative z-10">Ready to transform your routine?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 relative z-10">Ready to change your life?</h2>
           <p className="text-slate-300 dark:text-primary-50 mb-10 text-lg relative z-10">
-            Join thousands of others who are building their best selves, one habit at a time.
+            Join thousands of others who are building better versions of themselves every single day.
           </p>
-          <Link to="/register" className="btn bg-white text-slate-900 hover:bg-slate-100 px-10 py-4 text-lg font-bold relative z-10">
-            Get Started Now
+          <Link to={user ? "/dashboard" : "/register"} className="btn bg-white text-slate-900 hover:bg-slate-100 px-10 py-4 text-lg font-bold relative z-10">
+            {user ? "Go to Dashboard" : "Start Your Journey Free"}
           </Link>
         </div>
       </section>
@@ -304,3 +307,4 @@ const Landing = () => {
 }
 
 export default Landing
+

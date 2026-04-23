@@ -1,26 +1,27 @@
 import Modal from './Modal'
 
 const TermsModal = ({ isOpen, onClose }) => {
+  
   const sections = [
     {
-      title: "1. Acceptance of Terms",
-      content: "By creating an account on HabitFlow, you agree to comply with and be bound by these Terms of Service. If you do not agree, please do not use our platform."
+      title: 'Agreement to Terms',
+      content: 'By accessing or using HabitFlow, you agree to be bound by these Terms of Service. If you do not agree, you may not use the service.'
     },
     {
-      title: "2. Privacy & Security",
-      content: "We take your privacy seriously. Your data is encrypted and stored securely. We do not sell your personal information to third parties. You are responsible for maintaining the security of your account and password."
+      title: 'Your Account',
+      content: 'You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.'
     },
     {
-      title: "3. User Responsibilities",
-      content: "You agree to use HabitFlow only for lawful purposes. You are responsible for all activity that occurs under your account. Any abuse of the system may lead to permanent termination of your access."
+      title: 'Usage Rules',
+      content: 'HabitFlow is designed for personal habit tracking. You agree not to use the service for any illegal purposes or to interfere with the performance of our servers.'
     },
     {
-      title: "4. Personal Use Only",
-      content: "Our service is intended for personal habit tracking. Commercial use of the platform without explicit permission is prohibited."
+      title: 'Privacy & Data',
+      content: 'Your privacy is paramount. We handle your data according to our Privacy Policy. We do not sell your personal information to third parties.'
     },
     {
-      title: "5. Service Modifications",
-      content: "We reserve the right to modify or discontinue any part of the service at any time. We will notify users of any significant changes to these terms."
+      title: 'Termination',
+      content: 'We reserve the right to suspend or terminate your account at our discretion if we believe you have violated these terms.'
     }
   ]
 
@@ -35,12 +36,12 @@ const TermsModal = ({ isOpen, onClose }) => {
           onClick={onClose} 
           className="btn btn-primary w-full h-14 font-black text-lg shadow-xl shadow-primary-500/20 active:scale-[0.98] transition-all"
         >
-          I Understand
+          I Accept & Understand
         </button>
       }
     >
       <div className="space-y-8">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest -mt-4 mb-4 px-1">Effective April 2026</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest -mt-4 mb-4 px-1">Effective Date: April 23, 2026</p>
         
         {sections.map((section, i) => (
           <div key={i} className="space-y-3">
@@ -55,7 +56,7 @@ const TermsModal = ({ isOpen, onClose }) => {
         ))}
         
         <div className="p-4 rounded-2xl bg-primary-500/5 border border-primary-500/10 text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
-          By clicking "I Understand", you acknowledge that you have read and agreed to these terms. If you have any questions, please contact support@habitflow.io.
+          Please note that HabitFlow is a productivity tool and does not provide medical or psychological advice. Always consult a professional for health-related decisions.
         </div>
       </div>
     </Modal>

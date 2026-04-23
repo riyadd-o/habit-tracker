@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, User, CheckCircle2, Loader2, Sparkles, LayoutDashboard } from 'lucide-react'
-import useAuthStore from '../hooks/useAuthStore'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Mail, Lock, User as UserIcon, CheckCircle2, Loader2, Sparkles, LayoutDashboard } from 'lucide-react'
+import useAuthStore from '../hooks/useAuthStore'
 import ThemeToggle from '../components/ThemeToggle'
 import TermsModal from '../components/TermsModal'
 
@@ -57,14 +57,14 @@ const Register = () => {
          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500 rounded-full blur-[120px]" />
       </div>
 
-      <div className="absolute top-4 left-4">
+      <div className="absolute top-4 left-4 z-20">
         <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-primary-500 transition-colors font-medium">
           <LayoutDashboard className="w-5 h-5" />
-          <span>Back to Home</span>
+          <span>Back</span>
         </Link>
       </div>
 
-      <div className="absolute top-4 right-4"><ThemeToggle /></div>
+      <div className="absolute top-4 right-4 z-20"><ThemeToggle /></div>
 
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
@@ -86,7 +86,7 @@ const Register = () => {
             <div className="space-y-1.5">
               <label className="label ml-1">Full Name</label>
               <div className="relative group">
-                <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.name ? 'text-red-400' : 'text-slate-400 group-focus-within:text-primary-500'} transition-colors`} />
+                <UserIcon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.name ? 'text-red-400' : 'text-slate-400 group-focus-within:text-primary-500'} transition-colors`} />
                 <input 
                   type="text" 
                   placeholder="John Doe" 
@@ -148,14 +148,14 @@ const Register = () => {
             disabled={isLoading}
             className="btn btn-primary w-full h-14 text-lg font-bold flex items-center justify-center gap-3 shadow-xl shadow-primary-500/25 active:scale-95 transition-all"
           >
-            {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Create Account'}
+            {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Create Free Account'}
           </button>
         </form>
 
         <div className="text-center pt-2">
           <p className="text-slate-500 dark:text-slate-400 font-medium">
-            Already have an account? {' '}
-            <Link to="/login" className="text-primary-600 dark:text-primary-400 font-bold hover:underline underline-offset-4 decoration-2 transition-all">Log In</Link>
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary-600 dark:text-primary-400 font-bold hover:underline underline-offset-4 decoration-2 transition-all">Sign In</Link>
           </p>
         </div>
       </motion.div>

@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
 import { 
   LayoutDashboard, 
@@ -10,15 +11,36 @@ import {
   User,
   Bell,
   Search,
-  ChevronRight
+  ChevronRight,
+  Flame,
+  AlertCircle
 } from 'lucide-react'
 import useAuthStore from '../hooks/useAuthStore'
+import useHabitStore from '../hooks/useHabitStore'
 import ThemeToggle from '../components/ThemeToggle'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const DashboardLayout = () => {
   const { user, logout } = useAuthStore()
+  const { habits, fetchHabits } = useHabitStore()
   const location = useLocation()
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notificationRef = useRef(null)
+
+  useEffect(() => {
+    fetchHabits()
+    
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [fetchHabits])
+
+  const atRiskHabits = habits.filter(h => h.diffDays >= 2 && h.diffDays <= 4 && !h.completed)
+  const notificationCount = atRiskHabits.length
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
@@ -70,7 +92,7 @@ const DashboardLayout = () => {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors">{user?.name || 'User'}</p>
+              <p className="text-sm font-bold truncate text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors">{user?.name || 'Profile'}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
             </div>
           </Link>
@@ -80,7 +102,7 @@ const DashboardLayout = () => {
             <button 
               onClick={logout}
               className="p-2.5 rounded-xl hover:bg-red-50 text-slate-500 hover:text-red-500 dark:hover:bg-red-900/20 transition-all group lg:flex items-center gap-2"
-              title="Logout"
+              title="Sign Out"
             >
               <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
               <span className="hidden lg:block text-sm font-bold">Sign Out</span>
@@ -95,11 +117,83 @@ const DashboardLayout = () => {
         <header className="h-20 glass border-b border-slate-200 dark:border-slate-800 px-6 md:px-10 flex items-center justify-between sticky top-0 z-40">
           <div className="flex-1" />
 
-          <div className="flex items-center gap-3">
-             <button className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 relative transition-all active:scale-95">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950" />
-             </button>
+          <div className="flex items-center gap-3 relative">
+             {/* Notifications Bell */}
+             <div className="relative" ref={notificationRef}>
+                <button 
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className={`p-2.5 rounded-xl transition-all active:scale-95 relative ${showNotifications ? 'bg-primary-50 text-primary-500' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500'}`}
+                    title="Notifications"
+                >
+                    <Bell className="w-5 h-5" />
+                    {notificationCount > 0 && (
+                      <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 animate-pulse" />
+                    )}
+                </button>
+
+                <AnimatePresence>
+                    {showNotifications && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+                      >
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                          <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
+                          {notificationCount > 0 && (
+                            <span className="bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                              {notificationCount} Urgent
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="max-h-[300px] overflow-y-auto">
+                          {notificationCount > 0 ? (
+                            <div className="p-2 space-y-1">
+                              {atRiskHabits.map(habit => (
+                                <Link 
+                                  key={habit.id}
+                                  to={`/habit/${habit.id}`}
+                                  onClick={() => setShowNotifications(false)}
+                                  className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                                >
+                                  <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center text-orange-500 flex-shrink-0">
+                                    <Flame className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-primary-500 transition-colors">
+                                      Streak at Risk!
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                                      Complete '{habit.title}' today to keep your {habit.streak} day streak.
+                                    </p>
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-10 text-center space-y-3">
+                              <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mx-auto">
+                                <Bell className="w-6 h-6 opacity-20" />
+                              </div>
+                              <p className="text-sm text-slate-500">All caught up! No new notifications.</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <Link 
+                          to="/settings/notifications" 
+                          onClick={() => setShowNotifications(false)}
+                          className="block p-4 bg-slate-50 dark:bg-slate-800/50 text-center text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors border-t border-slate-100 dark:border-slate-800"
+                        >
+                          Configure Notifications
+                        </Link>
+                      </motion.div>
+                    )}
+                </AnimatePresence>
+             </div>
+
              <Link to="/settings/profile" className="md:hidden w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold text-sm shadow-md overflow-hidden active:scale-90 transition-transform">
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />

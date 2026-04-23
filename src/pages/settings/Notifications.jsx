@@ -83,8 +83,8 @@ const Notifications = () => {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Notifications</h2>
-          <p className="text-slate-500">Choose how and when you want to be notified.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Notification Settings</h2>
+          <p className="text-slate-500">Configure how you want to be reminded about your habits.</p>
         </div>
       </div>
 
@@ -97,7 +97,7 @@ const Notifications = () => {
               </div>
               <div>
                 <h3 className="font-bold">Email Notifications</h3>
-                <p className="text-sm text-slate-500">Receive weekly summaries and tips</p>
+                <p className="text-sm text-slate-500">Receive weekly summaries and achievement alerts.</p>
               </div>
             </div>
             <button
@@ -114,8 +114,8 @@ const Notifications = () => {
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold">Daily Habit Reminders</h3>
-                <p className="text-sm text-slate-500">Get reminded to complete your habits</p>
+                <h3 className="font-bold">Daily Reminders</h3>
+                <p className="text-sm text-slate-500">Get a reminder to check off your habits each day.</p>
               </div>
             </div>
             <button
@@ -137,7 +137,7 @@ const Notifications = () => {
                 <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                   <div>
                     <h3 className="font-bold">Reminder Time</h3>
-                    <p className="text-sm text-slate-500">Choose what time you want to receive your daily reminder</p>
+                    <p className="text-sm text-slate-500">Choose when you want to be notified.</p>
                   </div>
                   <input 
                     type="time" 

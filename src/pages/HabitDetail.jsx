@@ -50,7 +50,7 @@ const HabitDetail = () => {
   }, [habitLogs])
 
   if (!initialized) return <div className="h-full flex items-center justify-center py-20 animate-fade-in"><Loader2 className="animate-spin text-primary-500 w-10 h-10" /></div>
-  if (!habit) return <div className="p-10 text-center"><h3 className="text-xl font-bold">Habit not found</h3><button onClick={() => navigate('/dashboard')} className="btn btn-primary mt-4">Go Back</button></div>
+  if (!habit) return <div className="p-10 text-center"><h3 className="text-xl font-bold">Habit not found</h3><button onClick={() => navigate('/dashboard')} className="btn btn-primary mt-4">Back to Dashboard</button></div>
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
@@ -59,7 +59,7 @@ const HabitDetail = () => {
         className="btn btn-ghost flex items-center gap-2 group mb-6 px-0 hover:bg-transparent"
       >
         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-        <span className="font-semibold text-slate-500">Back to Dashboard</span>
+        <span className="font-semibold text-slate-500">Back to Overview</span>
       </button>
 
       {/* Hero */}
@@ -72,17 +72,17 @@ const HabitDetail = () => {
                 ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
                 : 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400'
               }`}>
-                {habit.frequency}
+                {habit.frequency === 'daily' ? 'Daily' : 'Weekly'}
               </span>
           </div>
-          <p className="text-xl text-slate-500 max-w-2xl">{habit.description || 'No description provided'}</p>
+          <p className="text-xl text-slate-500 max-w-2xl">{habit.description || 'No description provided.'}</p>
         </div>
 
         <div className="flex gap-4">
           <div className="card p-4 flex flex-col items-center min-w-[120px]">
             <Flame className="w-6 h-6 text-orange-500 mb-1 fill-orange-500" />
             <div className="text-2xl font-black">{streak.current}</div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Streak</div>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Streak</div>
           </div>
           <div className="card p-4 flex flex-col items-center min-w-[120px]">
             <TrendingUp className="w-6 h-6 text-primary-500 mb-1" />
@@ -160,7 +160,7 @@ const HabitDetail = () => {
         <section className="lg:col-span-3 space-y-4">
            <h3 className="text-xl font-bold flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-purple-500" />
-            Visual Progress (Last 30 Days)
+            Visual Progress
           </h3>
           <div className="card p-6 h-[300px]">
             <ResponsiveContainer width="100%" height="100%">

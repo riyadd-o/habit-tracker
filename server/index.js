@@ -197,7 +197,9 @@ const connectWithRetry = async () => {
       ADD COLUMN IF NOT EXISTS daily_reminder BOOLEAN DEFAULT true,
       ADD COLUMN IF NOT EXISTS reminder_time VARCHAR(5) DEFAULT '08:00',
       ADD COLUMN IF NOT EXISTS last_notification_sent DATE,
-      ADD COLUMN IF NOT EXISTS last_reminder_time_sent VARCHAR(5)
+      ADD COLUMN IF NOT EXISTS last_streak_warning DATE,
+      ADD COLUMN IF NOT EXISTS last_reminder_time_sent VARCHAR(5),
+      ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en'
     `);
 
     // Ensure habit streak columns exist
