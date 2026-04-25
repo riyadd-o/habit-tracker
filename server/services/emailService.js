@@ -86,72 +86,42 @@ export const sendResetEmail = async (email, token) => {
   return transporter.sendMail(mailOptions);
 };
 
-export const sendDailyReminder = async (email, name, habits) => {
-  const brandColor = "#4f46e5";
-  const accentColor = "#7c3aed";
-
-  const habitsHtml = habits.map(h => `
-    <div style="background-color: #f9fafb; border-radius: 12px; padding: 15px 20px; margin-bottom: 12px; border: 1px solid #f3f4f6;">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td>
-            <div style="font-weight: 700; color: #111827; font-size: 16px; margin-bottom: 4px;">${h.title}</div>
-            <div style="color: #ef4444; font-size: 14px; font-weight: 600;">🔥 ${h.streak || 0} day streak</div>
-          </td>
-          <td align="right">
-             <div style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid #d1d5db;"></div>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `).join('');
-
-  const content = `
-    <h2 style="margin: 0 0 10px 0; color: ${brandColor}; font-size: 24px; font-weight: 800; text-align: center;">Daily Reminder</h2>
-    <p style="margin: 0 0 25px 0; color: #4b5563; font-size: 16px; text-align: center;">
-        Hi <span style="color: ${accentColor}; font-weight: 700;">${name || 'there'}</span>, consistency is your superpower.
-    </p>
-
-    <div style="margin-bottom: 30px;">
-        <p style="margin: 0 0 15px 0; color: #111827; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Your Incomplete Habits:</p>
-        ${habitsHtml}
-    </div>
-
-    <div style="text-align: center;">
-        <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 36px; border-radius: 12px;">Launch Dashboard</a>
-    </div>
-  `;
-
-  const mailOptions = {
-    from: `"HabitFlow" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Daily Habit Reminder - HabitFlow",
-    html: getBaseTemplate(content, "Stay consistent. Small steps every day build powerful habits."),
-  };
-
-  return transporter.sendMail(mailOptions);
-};
-
-export const sendStreakWarning = async (email, name, habits) => {
-  const brandColor = "#f97316"; // Warning orange
-  const urgentColor = "#ef4444"; // Urgent red
+/**
+ * Unified Habit Notification (Reminder + Streak Warning)
+ * @param {string} email 
+ * @param {string} name 
+ * @param {Array} habits - All incomplete habits
+ * @param {Array} atRiskHabits - Subset of habits that are at risk
+ */
+export const sendHabitNotification = async (email, name, habits, atRiskHabits = []) => {
+  const isUrgent = atRiskHabits.length > 0;
+  const brandColor = isUrgent ? "#f97316" : "#4f46e5"; // Orange for warning, Blue for reminder
+  const accentColor = isUrgent ? "#ef4444" : "#7c3aed"; // Red for urgency, Purple for accent
 
   const habitsHtml = habits.map(h => {
-    const isUrgent = h.diffDays >= 3;
-    const statusMsg = isUrgent 
-      ? "Last chance! Complete this today or your streak will reset."
-      : "You're close to losing this streak. Complete it today to keep it alive.";
+    const atRisk = atRiskHabits.find(ar => ar.id === h.id);
+    const badge = atRisk 
+      ? `<div style="display: inline-block; background-color: #fee2e2; color: #ef4444; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; margin-bottom: 4px;">⚠️ AT RISK</div>`
+      : `<div style="display: inline-block; background-color: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; margin-bottom: 4px;">KEEP IT UP</div>`;
     
+    const riskMsg = atRisk 
+      ? `<div style="color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 4px; line-height: 1.4;">
+          ${atRisk.diffDays >= 4 ? 'LAST CHANCE: Streak resets tomorrow!' : 'Streak at risk: Missing since ' + atRisk.diffDays + ' days.'}
+         </div>`
+      : '';
+
     return `
-      <div style="background-color: #fffaf0; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid #ffedd5;">
+      <div style="background-color: ${atRisk ? '#fffaf0' : '#f9fafb'}; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; border: 1px solid ${atRisk ? '#ffedd5' : '#f3f4f6'};">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td>
-              <div style="font-weight: 700; color: #111827; font-size: 17px; margin-bottom: 6px;">${h.title}</div>
-              <div style="color: #ea580c; font-size: 15px; font-weight: 600; margin-bottom: 10px;">🔥 ${h.streak} day streak</div>
-              <div style="color: ${isUrgent ? urgentColor : '#6b7280'}; font-size: 14px; font-weight: 500; line-height: 1.4;">
-                ${statusMsg}
-              </div>
+              ${badge}
+              <div style="font-weight: 700; color: #111827; font-size: 16px; margin-bottom: 2px;">${h.title}</div>
+              <div style="color: ${atRisk ? '#ea580c' : '#4b5563'}; font-size: 14px; font-weight: 600;">🔥 ${h.streak || 0} day streak</div>
+              ${riskMsg}
+            </td>
+            <td align="right" valign="top">
+               <div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid ${atRisk ? '#fdba74' : '#d1d5db'}; margin-top: 4px;"></div>
             </td>
           </tr>
         </table>
@@ -159,28 +129,33 @@ export const sendStreakWarning = async (email, name, habits) => {
     `;
   }).join('');
 
+  const headerTitle = isUrgent ? "⚠️ Streak Warning" : "Daily Reminder";
+  const subTitle = isUrgent 
+    ? `Hi <span style="color: ${brandColor}; font-weight: 700;">${name || 'there'}</span>, don't let your hard work go to waste!`
+    : `Hi <span style="color: ${brandColor}; font-weight: 700;">${name || 'there'}</span>, consistency is your superpower.`;
+
   const content = `
-    <h2 style="margin: 0 0 10px 0; color: ${brandColor}; font-size: 26px; font-weight: 800; text-align: center;">⚠️ Your Streak is at Risk!</h2>
-    <p style="margin: 0 0 25px 0; color: #4b5563; font-size: 16px; text-align: center;">
-        Hi <span style="color: ${brandColor}; font-weight: 700;">${name || 'there'}</span>, don't let your hard work go to waste!
-    </p>
+    <h2 style="margin: 0 0 10px 0; color: ${brandColor}; font-size: 26px; font-weight: 800; text-align: center;">${headerTitle}</h2>
+    <p style="margin: 0 0 25px 0; color: #4b5563; font-size: 16px; text-align: center;">${subTitle}</p>
 
     <div style="margin-bottom: 30px;">
-        <p style="margin: 0 0 15px 0; color: #111827; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Habits nearing reset:</p>
+        <p style="margin: 0 0 15px 0; color: #111827; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; opacity: 0.7;">Incomplete Habits Today</p>
         ${habitsHtml}
     </div>
 
     <div style="text-align: center;">
-        <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 36px; border-radius: 12px; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);">Save My Streak</a>
+        <a href="${process.env.CLIENT_URL || 'https://habit-tracker-roan-tau.vercel.app'}" style="display: inline-block; background-color: ${brandColor}; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 700; padding: 18px 40px; border-radius: 14px; box-shadow: 0 6px 20px ${isUrgent ? 'rgba(249, 115, 22, 0.3)' : 'rgba(79, 70, 229, 0.25)'};">Complete My Habits</a>
     </div>
   `;
 
-  const footerText = "Consistency builds success. Don’t let your progress slip.";
+  const footerText = isUrgent 
+    ? "Consistency builds success. Don’t let your progress slip."
+    : "Small steps every day build powerful habits. Keep going!";
 
   const mailOptions = {
     from: `"HabitFlow" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "⚠️ Streak Warning - HabitFlow",
+    subject: `${isUrgent ? '⚠️ Streak Warning' : 'Daily Habit Reminder'} - HabitFlow`,
     html: getBaseTemplate(content, footerText),
   };
 
@@ -215,4 +190,12 @@ export const sendWelcomeEmail = async (email, name) => {
   };
 
   return transporter.sendMail(mailOptions);
+};
+
+export const sendDailyReminder = async (email, name, habits) => {
+  return sendHabitNotification(email, name, habits, []);
+};
+
+export const sendStreakWarning = async (email, name, habits) => {
+  return sendHabitNotification(email, name, habits, habits);
 };

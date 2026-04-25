@@ -1,164 +1,143 @@
-import cron from 'node-cron';
-import pkg from 'pg';
-import dotenv from 'dotenv';
-import { sendDailyReminder, sendStreakWarning } from './emailService.js';
+import cron from "node-cron";
+import pkg from "pg";
+import dotenv from "dotenv";
+import { sendDailyReminder, sendStreakWarning } from "./emailService.js";
 
 dotenv.config();
 const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: { rejectUnauthorized: false }
 });
 
-const getTargetDateString = () => {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Africa/Addis_Ababa',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
+const TIMEZONE = "Africa/Addis_Ababa";
+
+// ✅ Normalize ANY time format → "HH:MM"
+const normalizeTime = (time) => {
+  if (!time) return "08:00";
+  if (typeof time === "string" && (time.includes("AM") || time.includes("PM"))) {
+    const [t, mod] = time.split(" ");
+    let [h, m] = t.split(":");
+    if (mod === "PM" && h !== "12") h = String(+h + 12);
+    if (mod === "AM" && h === "12") h = "00";
+    return `${h.padStart(2, "0")}:${m}`;
+  }
+  if (typeof time === "string" && time.length > 5) return time.slice(0, 5);
+  return time;
+};
+
+const getCurrentTime = () => {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
   }).format(new Date());
 };
 
-export const notifyDueUsers = async (force = false) => {
-  console.log(`🚀 Running daily reminder engine... ${force ? "[FORCE MODE]" : ""}`);
-  const now = new Date();
-  
-  const addisAbabaTime = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Africa/Addis_Ababa',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(now);
-  
-  const [currentHour, currentMin] = addisAbabaTime.split(':').map(Number);
-  const currentTimeTotalMinutes = currentHour * 60 + currentMin;
+const getToday = () => {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+};
 
-  const todayStr = getTargetDateString();
-  const todayDate = new Date(todayStr);
+// 🧠 MAIN ENGINE
+export const notifyDueUsers = async () => {
+  console.log("🚀 Running filtered reminder engine...");
+
+  const currentTime = getCurrentTime();
+  const today = getToday();
 
   try {
-    // We fetch dates as text to avoid timezone shifting in JS
-    const usersRes = await pool.query(
-      `SELECT id, name, email, reminder_time, 
-              last_notification_sent::text as last_notification_sent_str, 
-              last_streak_warning::text as last_streak_warning_str,
-              last_reminder_time_sent 
-       FROM users 
-       WHERE daily_reminder = true`
-    );
-    const users = usersRes.rows;
+    const usersRes = await pool.query(`
+      SELECT id, name, email, reminder_time,
+             last_notification_sent,
+             last_streak_warning,
+             last_reminder_time_sent
+      FROM users
+      WHERE daily_reminder = true
+    `);
 
-    for (const user of users) {
+    for (const user of usersRes.rows) {
       try {
-        const rawTime = user.reminder_time || '08:00';
-        const timeStr = rawTime.trim(); // Normalize
-        const [h, m] = timeStr.split(':').map(Number);
-        const userTimeTotalMinutes = h * 60 + m;
-        
-        // 1. Time Check: Must be at or after reminder time
-        const isTimeReached = currentTimeTotalMinutes >= userTimeTotalMinutes;
-        if (!isTimeReached && !force) continue;
+        const reminderTime = normalizeTime(user.reminder_time);
+        const lastSentTime = normalizeTime(user.last_reminder_time_sent);
 
-        // 2. Already Sent Checks
-        const alreadySentReminder = user.last_notification_sent_str === todayStr;
-        const alreadySentWarning = user.last_streak_warning_str === todayStr;
-        const lastSentTime = (user.last_reminder_time_sent || '').trim();
-        const timeChanged = lastSentTime !== timeStr;
+        if (currentTime !== reminderTime) continue;
 
-        // 3. Fetch Incomplete Habits
+        const alreadySentToday = user.last_notification_sent?.toISOString().slice(0, 10) === today;
+        const alreadySentWarning = user.last_streak_warning?.toISOString().slice(0, 10) === today;
+        const timeChanged = lastSentTime !== reminderTime;
+
+        // 📌 Get all incomplete habits
         const habitsRes = await pool.query(
-          `SELECT h.id, h.title, h.streak, h.last_completed_date 
-           FROM habits h 
-           WHERE h.user_id = $1 AND h.frequency = 'daily'
-             AND NOT EXISTS (
-                SELECT 1 FROM habit_logs hl WHERE hl.habit_id = h.id AND hl.date = $2
-             )`,
-          [user.id, todayStr]
+          `SELECT h.id, h.title, h.streak, h.last_completed_date
+           FROM habits h
+           WHERE h.user_id = $1
+           AND NOT EXISTS (
+             SELECT 1 FROM habit_logs hl 
+             WHERE hl.habit_id = h.id AND hl.date = $2
+           )`,
+          [user.id, today]
         );
-        const incompleteHabits = habitsRes.rows;
 
-        // 4. Identify At-Risk Habits
-        const atRiskHabits = incompleteHabits.filter(h => {
-          if (!h.streak || h.streak <= 0 || !h.last_completed_date) return false;
-          
-          const lastDate = new Date(h.last_completed_date);
-          const diffTime = Math.abs(todayDate - lastDate);
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
+        let incompleteHabits = habitsRes.rows;
+        if (incompleteHabits.length === 0) continue;
+
+        // ⚠️ 1. Separate "At Risk" habits
+        const atRiskHabits = incompleteHabits.filter((h) => {
+          if (!h.last_completed_date) return false;
+          const diffDays = Math.floor((new Date(today) - new Date(h.last_completed_date)) / (1000 * 60 * 60 * 24));
           h.diffDays = diffDays;
           return diffDays >= 2 && diffDays <= 4;
         });
 
-        // 5. Decision Logic
-        if (incompleteHabits.length > 0) {
-          if (atRiskHabits.length > 0) {
-            // STREAK WARNING
-            if (!alreadySentWarning || timeChanged || force) {
-              // UPDATE FIRST to prevent concurrent runs from double-sending
-              await pool.query(
-                `UPDATE users SET 
-                  last_streak_warning = $1, 
-                  last_notification_sent = $1, 
-                  last_reminder_time_sent = $2 
-                 WHERE id = $3`,
-                [todayStr, timeStr, user.id]
-              );
+        // 🛑 2. Remove At-Risk habits from the standard Daily Reminder list
+        // This prevents the same habit from appearing in two emails.
+        const standardReminders = incompleteHabits.filter(
+          (h) => !atRiskHabits.some((risk) => risk.id === h.id)
+        );
 
-              console.log(`[CRON] 🚨 Sending streak warning to: ${user.email}`);
-              await sendStreakWarning(user.email, user.name, atRiskHabits);
-            } else {
-              // console.log(`[CRON] Skip streak warning for ${user.email} (already sent today)`);
-            }
-          } else {
-            // DAILY REMINDER
-            if (!alreadySentReminder || timeChanged || force) {
-              await pool.query(
-                `UPDATE users SET 
-                  last_notification_sent = $1, 
-                  last_reminder_time_sent = $2 
-                 WHERE id = $3`,
-                [todayStr, timeStr, user.id]
-              );
-
-              console.log(`[CRON] ✉️ Sending daily reminder to: ${user.email}`);
-              await sendDailyReminder(user.email, user.name, incompleteHabits);
-            } else {
-              // console.log(`[CRON] Skip daily reminder for ${user.email} (already sent today)`);
-            }
-          }
-        } else {
-          // No incomplete habits - Mark as processed for today
-          if ((!alreadySentReminder && !alreadySentWarning) || timeChanged) {
-            if (!force) {
-              await pool.query(
-                `UPDATE users SET 
-                  last_notification_sent = $1, 
-                  last_reminder_time_sent = $2 
-                 WHERE id = $3`,
-                [todayStr, timeStr, user.id]
-              );
-            }
-          }
+        // ===============================
+        // 📩 DAILY REMINDER (Standard only)
+        // ===============================
+        if (standardReminders.length > 0 && (!alreadySentToday || timeChanged)) {
+          console.log(`✉️ Sending DAILY REMINDER (Standard) to ${user.email}`);
+          await sendDailyReminder(user.email, user.name, standardReminders);
+          await pool.query(
+            `UPDATE users SET last_notification_sent = NOW(), last_reminder_time_sent = $1 WHERE id = $2`,
+            [reminderTime, user.id]
+          );
         }
-      } catch (innerErr) {
-        console.error(`[CRON] User ${user.email} processing failed:`, innerErr.message);
+
+        // ===============================
+        // ⚠️ STREAK WARNING (At-Risk only)
+        // ===============================
+        if (atRiskHabits.length > 0 && (!alreadySentWarning || timeChanged)) {
+          console.log(`🚨 Sending STREAK WARNING to ${user.email}`);
+          await sendStreakWarning(user.email, user.name, atRiskHabits);
+          await pool.query(
+            `UPDATE users SET last_streak_warning = NOW() WHERE id = $1`,
+            [user.id]
+          );
+        }
+
+      } catch (err) {
+        console.error(`[CRON] User ${user.email} failed:`, err.message);
       }
     }
   } catch (err) {
-    console.error('[CRON] engine error:', err);
+    console.error("❌ Cron engine error:", err.message);
   }
 };
 
 export const startCronJobs = () => {
-  console.log('⏰ Initializing Smart Reminder & Streak Guard (Africa/Addis_Ababa)');
-  cron.schedule('* * * * *', () => {
-    notifyDueUsers();
-  }, {
+  cron.schedule("* * * * *", () => { notifyDueUsers(); }, {
     scheduled: true,
-    timezone: "Africa/Addis_Ababa"
+    timezone: TIMEZONE
   });
-  console.log('✅ Monitoring habits and streaks in real-time.');
 };
