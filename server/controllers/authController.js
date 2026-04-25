@@ -7,6 +7,7 @@ import { sendResetEmail, sendWelcomeEmail } from "../services/emailService.js";
 const { Pool } = pkg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 export const register = async (req, res) => {
@@ -23,7 +24,7 @@ export const register = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      "INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name",
+      "INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name, avatar_url",
       [email, hashedPassword, name || email.split('@')[0]]
     );
     res.status(201).json(result.rows[0]);
@@ -65,7 +66,7 @@ export const login = async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Login failed" });

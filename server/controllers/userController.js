@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 const { Pool } = pkg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 export const updateProfile = async (req, res) => {
@@ -12,7 +13,7 @@ export const updateProfile = async (req, res) => {
 
   try {
     const result = await pool.query(
-      "UPDATE users SET name = $1, avatar_url = $2 WHERE id = $3 RETURNING id, name, email, avatar_url, email_notifications, daily_reminder",
+      "UPDATE users SET name = COALESCE($1, name), avatar_url = COALESCE($2, avatar_url) WHERE id = $3 RETURNING id, name, email, avatar_url, email_notifications, daily_reminder",
       [name, avatar_url, userId]
     );
 

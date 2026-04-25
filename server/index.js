@@ -64,16 +64,8 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use("/uploads", express.static(uploadsDir));
 
-// Multer Config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Multer Config (Memory storage for ephemeral-disk safety)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -479,11 +471,12 @@ app.put("/user/avatar", authenticateToken, upload.single("avatar"), async (req, 
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    // Convert buffer to Base64 data URI for persistent storage in DB
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
     
     const result = await pool.query(
       "UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING id, name, email, avatar_url",
-      [fileUrl, req.user.id]
+      [base64Image, req.user.id]
     );
 
     res.json(result.rows[0]);
