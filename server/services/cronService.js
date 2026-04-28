@@ -13,20 +13,26 @@ const pool = new Pool({
 
 const TIMEZONE = "Africa/Addis_Ababa";
 
-// ✅ Normalize ANY time format → "HH:MM"
+// ✅ Normalize time
 const normalizeTime = (time) => {
   if (!time) return "08:00";
-  if (typeof time === "string" && (time.includes("AM") || time.includes("PM"))) {
-    const [t, mod] = time.split(" ");
+
+  if (time.includes("AM") || time.includes("PM")) {
+    let [t, mod] = time.split(" ");
     let [h, m] = t.split(":");
-    if (mod === "PM" && h !== "12") h = String(+h + 12);
-    if (mod === "AM" && h === "12") h = "00";
-    return `${h.padStart(2, "0")}:${m}`;
+
+    h = parseInt(h);
+
+    if (mod === "PM" && h !== 12) h += 12;
+    if (mod === "AM" && h === 12) h = 0;
+
+    return `${String(h).padStart(2, "0")}:${m}`;
   }
-  if (typeof time === "string" && time.length > 5) return time.slice(0, 5);
-  return time;
+
+  return time.slice(0, 5);
 };
 
+// ✅ Current time HH:mm
 const getCurrentTime = () => {
   return new Intl.DateTimeFormat("en-GB", {
     timeZone: TIMEZONE,
@@ -36,6 +42,7 @@ const getCurrentTime = () => {
   }).format(new Date());
 };
 
+// ✅ Today YYYY-MM-DD
 const getToday = () => {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: TIMEZONE,
@@ -45,19 +52,15 @@ const getToday = () => {
   }).format(new Date());
 };
 
-// 🧠 MAIN ENGINE
 export const notifyDueUsers = async () => {
-  console.log("🚀 Running filtered reminder engine...");
-
   const currentTime = getCurrentTime();
   const today = getToday();
 
+  console.log(`\n⏰ CRON → ${currentTime} (${today})`);
+
   try {
     const usersRes = await pool.query(`
-      SELECT id, name, email, reminder_time,
-             last_notification_sent,
-             last_streak_warning,
-             last_reminder_time_sent
+      SELECT id, name, email, reminder_time
       FROM users
       WHERE daily_reminder = true
     `);
@@ -65,79 +68,108 @@ export const notifyDueUsers = async () => {
     for (const user of usersRes.rows) {
       try {
         const reminderTime = normalizeTime(user.reminder_time);
-        const lastSentTime = normalizeTime(user.last_reminder_time_sent);
 
-        if (currentTime !== reminderTime) continue;
+        // ⛔ Only exact minute
+        if (currentTime !== reminderTime) {
+          continue;
+        }
 
-        const alreadySentToday = user.last_notification_sent?.toISOString().slice(0, 10) === today;
-        const alreadySentWarning = user.last_streak_warning?.toISOString().slice(0, 10) === today;
-        const timeChanged = lastSentTime !== reminderTime;
+        console.log(`👤 ${user.email}`);
 
-        // 📌 Get all incomplete habits
+        // 📊 Get incomplete habits
         const habitsRes = await pool.query(
           `SELECT h.id, h.title, h.streak, h.last_completed_date
            FROM habits h
            WHERE h.user_id = $1
            AND NOT EXISTS (
-             SELECT 1 FROM habit_logs hl 
+             SELECT 1 FROM habit_logs hl
              WHERE hl.habit_id = h.id AND hl.date = $2
            )`,
           [user.id, today]
         );
 
-        let incompleteHabits = habitsRes.rows;
-        if (incompleteHabits.length === 0) continue;
+        const incompleteHabits = habitsRes.rows;
 
-        // ⚠️ 1. Separate "At Risk" habits
+        if (incompleteHabits.length === 0) {
+          console.log(`✅ No incomplete habits`);
+          continue;
+        }
+
+        // ⚠️ Detect at-risk
         const atRiskHabits = incompleteHabits.filter((h) => {
           if (!h.last_completed_date) return false;
-          const diffDays = Math.floor((new Date(today) - new Date(h.last_completed_date)) / (1000 * 60 * 60 * 24));
-          h.diffDays = diffDays;
+
+          const diffDays = Math.floor(
+            (new Date(today) - new Date(h.last_completed_date)) /
+            (1000 * 60 * 60 * 24)
+          );
+
           return diffDays >= 2 && diffDays <= 4;
         });
 
-        // 🛑 2. Remove At-Risk habits from the standard Daily Reminder list
-        // This prevents the same habit from appearing in two emails.
-        const standardReminders = incompleteHabits.filter(
-          (h) => !atRiskHabits.some((risk) => risk.id === h.id)
+        // =========================
+        // ✅ DAILY REMINDER LOCK (FIXED)
+        // =========================
+        const dailyLock = await pool.query(
+          `UPDATE users
+           SET last_notification_sent = NOW(),
+               last_reminder_time_sent = $1
+           WHERE id = $2
+           AND (
+             last_notification_sent IS NULL
+             OR DATE(last_notification_sent AT TIME ZONE 'Africa/Addis_Ababa') != $3
+             OR last_reminder_time_sent != $1
+           )
+           RETURNING id`,
+          [reminderTime, user.id, today]
         );
 
-        // ===============================
-        // 📩 DAILY REMINDER (Standard only)
-        // ===============================
-        if (standardReminders.length > 0 && (!alreadySentToday || timeChanged)) {
-          console.log(`✉️ Sending DAILY REMINDER (Standard) to ${user.email}`);
-          await sendDailyReminder(user.email, user.name, standardReminders);
-          await pool.query(
-            `UPDATE users SET last_notification_sent = NOW(), last_reminder_time_sent = $1 WHERE id = $2`,
-            [reminderTime, user.id]
-          );
+        if (dailyLock.rowCount > 0) {
+          console.log(`📧 DAILY SENT → ${user.email}`);
+          await sendDailyReminder(user.email, user.name, incompleteHabits);
+        } else {
+          console.log(`🛑 DAILY BLOCKED → ${user.email}`);
         }
 
-        // ===============================
-        // ⚠️ STREAK WARNING (At-Risk only)
-        // ===============================
-        if (atRiskHabits.length > 0 && (!alreadySentWarning || timeChanged)) {
-          console.log(`🚨 Sending STREAK WARNING to ${user.email}`);
-          await sendStreakWarning(user.email, user.name, atRiskHabits);
-          await pool.query(
-            `UPDATE users SET last_streak_warning = NOW() WHERE id = $1`,
-            [user.id]
+        // =========================
+        // ✅ STREAK WARNING LOCK (ALREADY CORRECT)
+        // =========================
+        if (atRiskHabits.length > 0) {
+          const warningLock = await pool.query(
+            `UPDATE users
+             SET last_streak_warning = NOW()
+             WHERE id = $1
+             AND (
+               last_streak_warning IS NULL
+               OR DATE(last_streak_warning AT TIME ZONE 'Africa/Addis_Ababa') != $2
+             )
+             RETURNING id`,
+            [user.id, today]
           );
+
+          if (warningLock.rowCount > 0) {
+            console.log(`🚨 WARNING SENT → ${user.email}`);
+            await sendStreakWarning(user.email, user.name, atRiskHabits);
+          } else {
+            console.log(`🛑 WARNING BLOCKED`);
+          }
         }
 
       } catch (err) {
-        console.error(`[CRON] User ${user.email} failed:`, err.message);
+        console.error(`❌ User ${user.email} failed:`, err.message);
       }
     }
   } catch (err) {
-    console.error("❌ Cron engine error:", err.message);
+    console.error("❌ Cron error:", err.message);
   }
 };
 
 export const startCronJobs = () => {
-  cron.schedule("* * * * *", () => { notifyDueUsers(); }, {
-    scheduled: true,
+  cron.schedule("* * * * *", () => {
+    notifyDueUsers();
+  }, {
     timezone: TIMEZONE
   });
+
+  console.log("✅ Cron started (NO duplicates, production safe)");
 };
